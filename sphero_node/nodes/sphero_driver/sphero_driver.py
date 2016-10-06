@@ -97,6 +97,7 @@ REQ = dict(
   CMD_GET_APP_CONFIG_BLK = [0x02, 0x05],
   CMD_SET_DATA_STRM = [0x02, 0x11],
   CMD_CFG_COL_DET = [0x02, 0x12],
+  CMD_CFG_LOC = [0X02, 0X13],
   CMD_SET_RGB_LED = [0x02, 0x20],
   CMD_SET_BACK_LED = [0x02, 0x21],
   CMD_GET_RGB_LED = [0x02, 0x22],
@@ -283,7 +284,7 @@ class Sphero(threading.Thread):
 
   def clamp(self, n, minn, maxn):
     return max(min(maxn, n), minn)
-    
+
   def ping(self, response):
     """
     The Ping command is used to verify both a solid data link with the
@@ -465,6 +466,13 @@ class Sphero(threading.Thread):
     """
     self.send(self.pack_cmd(REQ['CMD_POLL_TIME'],[((time>>24) & 0xff), ((time>>16) & 0xff), ((time>>8) & 0xff), (time & 0xff)]), response)
 
+  def cfg_loc(self, response):
+    """
+    Configure the locator
+    """
+    # self.send(self.pack_cmd(REQ['CMD_CFG_LOC'], [0x00,(int(loc[0])>>8),(int(loc[0]) & 0xff), (int(loc[1])>>8),(int(loc[1]) & 0xff), 0x00, 0x00]), response)
+    self.send(self.pack_cmd(REQ['CMD_CFG_LOC'], [0x00,0x00,0x00, 0x00,0x00, 0x00, 0x00]), response)
+
   def set_heading(self, heading, response):
     """
     This allows the client to adjust the orientation of Sphero by
@@ -559,7 +567,7 @@ class Sphero(threading.Thread):
     """
     Helper function to add all the filtered data to the data strm
     mask, so that the user doesn't have to set the data strm manually.
-    
+
     :param sample_div: divisor of the maximum sensor sampling rate.
     :param sample_frames: number of sample frames emitted per packet.
     :param pcnt: packet count (set to 0 for unlimited streaming).
@@ -578,7 +586,7 @@ class Sphero(threading.Thread):
     """
     Helper function to add all the raw data to the data strm mask, so
     that the user doesn't have to set the data strm manually.
-    
+
     :param sample_div: divisor of the maximum sensor sampling rate.
     :param sample_frames: number of sample frames emitted per packet.
     :param pcnt: packet count (set to 0 for unlimited streaming).
@@ -598,7 +606,7 @@ class Sphero(threading.Thread):
     """
     Helper function to add all the data to the data strm mask, so
     that the user doesn't have to set the data strm manually.
-    
+
     :param sample_div: divisor of the maximum sensor sampling rate.
     :param sample_frames: number of sample frames emitted per packet.
     :param pcnt: packet count (set to 0 for unlimited streaming).
@@ -723,9 +731,9 @@ class Sphero(threading.Thread):
       | SOP1 | SOP2 | DID | CID | SEQ | DLEN | <data> | CHK |
       -------------------------------------------------------
 
-    * SOP1 - start packet 1 - Always 0xff. 
+    * SOP1 - start packet 1 - Always 0xff.
     * SOP2 - start packet 2 - Set to 0xff when an acknowledgement is\
-      expected, 0xfe otherwise.    
+      expected, 0xfe otherwise.
     * DID - Device ID
     * CID - Command ID
     * SEQ - Sequence Number - This client field is echoed in the\
@@ -816,7 +824,7 @@ class Sphero(threading.Thread):
           else:
             break
             #print "Response packet", self.data2hexstr(data_packet)
-         
+
         elif data[:2] == RECV['ASYNC']:
           data_length = (ord(data[3])<<8)+ord(data[4])
           if data_length+5 <= len(data):
@@ -834,7 +842,8 @@ class Sphero(threading.Thread):
           else:
             print "got a packet that isn't streaming: " + self.data2hexstr(data)
         else:
-          raise RuntimeError("Bad SOF : " + self.data2hexstr(data))
+          #raise RuntimeError("Bad SOF : " + self.data2hexstr(data))
+          data = []
       self.raw_data_buf=data
 
   def parse_pwr_notify(self, data, data_length):
@@ -846,10 +855,10 @@ class Sphero(threading.Thread):
       |State |
       --------
 
-    The power state byte: 
-      * 01h = Battery Charging, 
+    The power state byte:
+      * 01h = Battery Charging,
       * 02h = Battery OK,
-      * 03h = Battery Low, 
+      * 03h = Battery Low,
       * 04h = Battery Critical
     '''
     return struct.unpack_from('B', ''.join(data[5:]))[0]
@@ -880,7 +889,7 @@ class Sphero(threading.Thread):
     this value.
     '''
     output={}
-    
+
     output['X'], output['Y'], output['Z'], output['Axis'], output['xMagnitude'], output['yMagnitude'], output['Speed'], output['Timestamp'] = struct.unpack_from('>hhhbhhbI', ''.join(data[5:]))
     return output
 
@@ -899,5 +908,3 @@ class Sphero(threading.Thread):
     self.is_connected = False
     self.bt.close()
     return self.is_connected
-
-

@@ -1,18 +1,18 @@
-sphero_ros
-==========
+# sphero_ros : Murphey lab version
+##Requirements
+ - bluetooth and pybluez must be installed
+ - Developed in catkin workspace
 
-checkout the [docs](http://mmwise.github.com/sphero_ros)
+To correctly install, navigate to the src file of your catkin workspace.
 
-=======
-## Installation
-Installation is now based on catkin:
+    $ cd ~{catkin_ws}/src/
 
-      cd <ws>/src
-      git clone https://github.com/mmwise/sphero_ros
-      cd <ws>
-      catkin_make
-      catkin_make install
-      source <ws>/install/setup.bash
-      ...
+    $ git clone https://github.com/MurpheyLab/sphero_ros-1.git
+
+Then at the top level of your workspace run: 
+    $ source devel/setup.bash
+    $ catkin_make
+
+
 
 
