@@ -1,0 +1,167 @@
+from collections import deque
+import numpy as np
+import argparse
+import imutils
+import cv2
+
+def nothing(x):
+    pass
+
+class BallTracker:
+    ''' Ball tracking class using opencv'''
+    def __init__(self, objects_to_track=None):
+        # argument parser
+        ap = argparse.ArgumentParser()
+        ap.add_argument("-v", "--video", help="path to the (optional) video file")
+        ap.add_argument("-b", "--buffer", type=int, default=64, help="max buffer size")
+        ap.add_argument("-c", "--config", type=int, default=1, help="configure settings")
+        self.args = vars(ap.parse_args())
+
+        if objects_to_track is None: # see if any objects are passed
+            # define lower and upper boundaries of color
+            self.lower = (29, 86, 6)
+            self.upper = (64, 255, 255)
+
+            self.pts = deque(maxlen=self.args["buffer"])
+
+            # if video not supplied, get camera
+            if not self.args.get("video", False):
+                self.camera = cv2.VideoCapture(0)
+            else:
+                self.camera = cv2.VideoCapture(args["video"])
+
+            # self.camera.set(3, 320)
+            # self.camera.set(4, 240)
+
+            cv2.namedWindow('BGR')
+            cv2.namedWindow('Image')
+
+            # create trackbars
+            cv2.createTrackbar('Rmax','BGR',0,255,nothing)
+            cv2.createTrackbar('Gmax','BGR',0,255,nothing)
+            cv2.createTrackbar('Bmax','BGR',0,255,nothing)
+            cv2.createTrackbar('Rmin','BGR',0,255,nothing)
+            cv2.createTrackbar('Gmin','BGR',0,255,nothing)
+            cv2.createTrackbar('Bmin','BGR',0,255,nothing)
+
+            self._objects_to_track = None
+            self.__n_objects = self.args["config"]
+        else:
+            self._objects_to_track = objects_to_track
+            self.__n_objects = len(objects_to_track) # number of objects to track
+
+    def stop_track(self):
+        self.camera.release()
+        cv2.destroyAllWindows()
+
+    def drawObject(self, center,x,y,radius, frame):
+        cv2.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
+        cv2.circle(frame, center, 5, (0,0,255),-1)
+        cv2.putText(frame, str((int(x), int(y))), (int(x), int(y)) ,cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255))
+
+    def track_filtered_objects(self):
+        for
+
+    def configure_tracking():
+        r = cv2.getTrackbarPos('Rmax','BGR')
+        g = cv2.getTrackbarPos('Gmax','BGR')
+        b = cv2.getTrackbarPos('Bmax','BGR')
+        self.upper = (int(b), int(g), int(r))
+        r = cv2.getTrackbarPos('Rmin','BGR')
+        g = cv2.getTrackbarPos('Gmin','BGR')
+        b = cv2.getTrackbarPos('Bmin','BGR')
+        self.lower = (int(b), int(g), int(r))
+
+    def track(self):
+        # actual ball tracking loop
+        while True:
+            # grab current frame
+            (grabbed, self.frame) = self.camera.read()
+
+            if self.args.get("video") and not grabbed:
+                break # if at end of video, break out of loop
+
+            if self._objects_to_track is None:
+                self.configure_tracking()
+            else:
+                self.track_filtered_objects()
+
+
+
+
+
+            # resize frame and convert to hsv
+            # frame = imutils.resize(frame, width=600)
+            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+            # mask = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+            # construct mask for color
+            mask = cv2.inRange(hsv, self.upper, self.lower)
+            mask = cv2.erode(mask, None, iterations=2)
+            mask = cv2.dilate(mask, None, iterations=2)
+
+            # cv2.imshow('dilate', mask)
+            # find contour in the mask and init the current x,y of ball
+            cnts, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            # cnts, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            #cv2.drawContours(frame,cnts,-1,(0,255,0),3)
+            center = None
+
+            if hierarchy is not None: # check to see if there is an object to be found
+                if len(hierarchy[0]) > self.__n_objects:
+                    print 'Too many objects: ', len(hierarchy[0]), len(cnts)
+                else:
+                    for i in xrange(len(hierarchy[0])):
+
+                        M = cv2.moments(cnts[i])
+                        # c = max(cnts, key=cv2.contourArea)
+                        # M = cv2.moments(c)
+                        if M["m00"] > 400:
+                            ((x,y), radius) = cv2.minEnclosingCircle(cnts[i])
+                            print 'Area: ', M["m00"]
+                            center = (int(M["m10"] / M["m00"]), int( M["m01"] / M["m00"] ))
+                            self.drawObject(center, x, y, radius, frame)
+
+
+            # circles = cv2.HoughCircles(mask, cv2.cv.CV_HOUGH_GRADIENT, 1.2, 100)
+
+            # if circles is not None:
+            #     circles = np.round(circles[0,:]).astype("int")
+            #
+            #     for (x,y,r) in circles:
+            #         cv2.circle(frame, (x,y), r, (0,255,255),4)
+
+            # if len(cnts)>0:
+            #     c = max(cnts, key=cv2.contourArea)
+            #     ((x,y), radius) = cv2.minEnclosingCircle(c)
+            #     M = cv2.moments(c)
+            #     center = (int(M["m10"] / M["m00"]), int( M["m01"] / M["m00"] ))
+            #
+            #     if radius > 10:
+            #         cv2.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
+            #         cv2.circle(frame, center, 5, (0,0,255),-1)
+
+            # self.pts.appendleft(center)
+
+            # loop over the set of tracked points
+            # for i in xrange(1, len(self.pts)):
+            #
+            #     if self.pts[i-1] is None or self.pts[i] is None:
+            #         continue
+            #
+            #     thickness = int(np.sqrt(self.args["buffer"] / float(i+1)) * 2.5)
+            #     cv2.line(frame, self.pts[i-1], self.pts[i], (0,0,255), thickness)
+
+            cv2.imshow('BGR', mask)
+            cv2.imshow('Image', frame)
+            key = cv2.waitKey(1) & 0xFF
+
+            if key == ord("q"):
+                break
+
+if __name__ == '__main__':
+    bt = BallTracker()
+    try:
+        bt.track()
+    except KeyboardInterrupt:
+        bt.stop_track()
