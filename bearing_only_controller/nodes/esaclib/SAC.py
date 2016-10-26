@@ -21,7 +21,7 @@ class SAC:
         self.B = self.system.fdu
         self.cost = cost
         self.R = self.cost.R
-        self.umax = [10.,10.]
+        self.umax = [1.,1.]
         '''
         Need to add the bunches of parameters that go along with SAC, yay.
 

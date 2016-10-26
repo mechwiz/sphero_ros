@@ -59,6 +59,7 @@ from scipy import interpolate
 class SpheroController:
 
     def __init__(self, param=None):
+        ''' Initialize the sphero controller class (I should actually inherit the actual controller class which makes the setup simple)'''
 
         if not param:
             self.param = {
@@ -76,9 +77,9 @@ class SpheroController:
 
     def _init_sac(self):
 
-        coef = np.array([5,5])
-        xlim = [[0,1],[0,1]]
-        basis = Basis(coef, xlim)
+        coef = np.array([5,5]) # number of coefficients
+        xlim = [[0,1],[0,1]] # search space limit
+        basis = Basis0(coef, xlim) # basis function (should be inherited by the cost)
         self.xlim = xlim
 
         phi_temp = lambda x,y: exp( -50*(x - 1.2)**2)*exp( -50*(y - 1.0)**2) + \
@@ -88,7 +89,7 @@ class SpheroController:
 
         self.cost = CostFunction(basis, phi, coef, xlim)
         self.u0 = lambda t: np.array([0.,0.])
-        self.system = DoubleIntegrator() # init model
+        self.system = Single_Integrator() # init model
 
         self.T = 0.8
         self.ts = 1./10.
@@ -117,8 +118,7 @@ class SpheroController:
         # setup publishers + subribers + timers:
 
         # subscribers
-        self.odom_sub = rospy.Subscriber('odom', Odometry, self.get_odometry )
-        self.imu_sub = rospy.Subscriber('imu', Imu, self.get_imu)
+        self.odom_sub = rospy.Subscriber('odomRobot', Odometry, self.get_odometry )
 
         # publishers
         self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=2)
@@ -129,9 +129,6 @@ class SpheroController:
         # mode indicators for the sphero
         self.back_led_pub = rospy.Publisher('set_back_led', Float32, queue_size=1)
         self.color_pub = rospy.Publisher('set_color', ColorRGBA, queue_size=1)
-
-        # necessary timers to make sac run as efficiently as possible
-        self.main_timer = rospy.Timer(rospy.Duration(self.param['main_timer']), self._main_loop)
 
     def _init_sac_timers(self):
         self.sac_timer = rospy.Timer(rospy.Duration(self.param['sac_timer']), self._get_control)
@@ -150,12 +147,15 @@ class SpheroController:
         self.sensor._eid() # update the eid
         self.cost.update_phik(self.sensor.ravel(), [sensor.state_space[0].ravel(), sensor.state_space[1].ravel()]) # update the phik
     def _sense(self, data):
+        '''
+        Update the EKF estimate of the target
+        '''
         self.sensor.param = # target location
         vk = sensor.h(self.x0[0:2]) # get the robot's state and the targets state and find the angle between
         self.sensor.update(self.x0, vk) # update the ekf
 
     def _get_control(self, data):
-        ''' method that will have all the SAC stuff'''
+        ''' Get the SAC controller and control the sphero'''
         (_, u2) = self.sac.control(self.odom, self.ck0, self.u0, self.tcurr, self.T)
         self.u = u2(self.tcurr)*self.control_weight
         self.cmd_vel_pub.publish(Twist(Vector3(int(self.u[0]*255),int(self.u[1]*255),0.0), Vector3(0.0,0.0,0.0)))
