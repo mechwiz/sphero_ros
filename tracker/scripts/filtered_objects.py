@@ -15,7 +15,7 @@ class Sphero(object):
 class TennisBall(object):
 
     def __init__(self):
-        self.name = "Tennis Ball"
+        self.name = "TennisBall"
         self.upper = (72, 255, 255)
         self.lower = (19, 69, 96)
 

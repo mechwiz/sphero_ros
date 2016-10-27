@@ -10,9 +10,12 @@ PUBLISHERS (from the BallTracker class):
     Location of each object that we are tracking
 '''
 from ball_tracking import BallTracker
-
+from filtered_objects import Sphero, Light
+from filtered_objects import TennisBall
 if __name__ == '__main__':
-    tracker = BallTracker()
+    rb = TennisBall()
+    sb = Sphero()
+    tracker = BallTracker(objects_to_track=[rb,sb])
     try:
         tracker.spin()
     except KeyboardInterrupt:

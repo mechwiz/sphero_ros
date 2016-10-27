@@ -78,9 +78,8 @@ class PSController(object):
         ''' reset the odometry '''
         self.reset_loc_pub.publish(Float32(1))
 
-    def spin(self):
-        r = rospy.Rate(60.0)
-
+    def spin(self, rate=60):
+        r = rospy.Rate(rate)
         while not rospy.is_shutdown():
 
             if self.__manual_control: # check to see if manual control is on
@@ -102,6 +101,7 @@ class PSController(object):
             r.sleep()
 
     def __calibration(self):
+        ''' Method to calibrate the sphero '''
         if np.linalg.norm(self.__joy['axes'][0:2]) > 0:
             self.__cmd_vel_pub.publish(Twist(Vector3(int(self.__joy['axes'][0]*100),int(self.__joy['axes'][1]*100),0.0), Vector3(0.0,0.0,0.0)))
         if np.linalg.norm(self.__joy['axes'][3:4]) > 0:
@@ -127,9 +127,9 @@ class PSController(object):
         self.__trigger.update({'L2': data.buttons[8], 'R2': data.buttons[9]})
 
     def __control(self):
+        ''' Method that fully controls the sphero '''
         u = self.__joy['axes'][0:2]
         self.__cmd_vel_pub.publish(Twist(Vector3(int(u[0]*255),int(u[1]*255),0.0), Vector3(0.0,0.0,0.0)))
-
 
 if __name__ == '__main__':
     sac = PSController()
