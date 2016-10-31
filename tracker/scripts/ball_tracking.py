@@ -16,7 +16,7 @@ PUBLISHERS:
 import rospy
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose, Vector3, Point, Quaternion
-
+from std_msgs.msg import Float32
 ###########
 # Imports for opencv
 ###########
@@ -85,6 +85,11 @@ class BallTracker:
             self.odom_pub = [rospy.Publisher('odom%d' %i, Pose, queue_size=2) for i in range(self.__n_objects)]
         else:
             self.odom_pub = [rospy.Publisher('odom'+obj.name, Pose, queue_size=2) for obj in self._objects_to_track]
+            self.__vk = 10.0
+            self.vk_sub = rospy.Subscriber('vk', Float32, self._get_vk)
+
+    def _get_vk(self, data):
+        self.__vk = data.data
 
     def stop_track(self):
         ''' safety camera release '''
@@ -104,6 +109,7 @@ class BallTracker:
         '''
         Loop through the object to track list and find each object
         '''
+        l1 = []
         for i, thing in enumerate(self._objects_to_track):
             self.mask = cv2.inRange(self.hsv, thing.lower, thing.upper) # yes I used thing ... don't want to use object
             self.mask = cv2.erode(self.mask, None, iterations=2)
@@ -122,7 +128,19 @@ class BallTracker:
                 self.odom_pub[i].publish(pose) # publish the data
 
                 center = (int(M["m10"] / M["m00"]), int( M["m01"] / M["m00"] ))
-                self.drawObject(center, x, y, radius, name=thing.name)
+                thing.x0 = np.array([x,y])
+                thing.center = center
+                thing.radius = radius
+
+                if hasattr(thing, 'draw_me'):
+                    thing.draw_me(self.frame)
+                else:
+                    self.drawObject(center, x, y, radius, name=thing.name)
+                l1.append((int(thing.x0[0]), int(thing.x0[1])))
+        print self.__vk
+        if self.__vk < 5 and len(l1)>=2:
+            print 'vk vals: ::::', self.__vk
+            cv2.line(self.frame, l1[0], l1[1], (255,0,0), 5)
 
     def configure_tracking(self):
         '''

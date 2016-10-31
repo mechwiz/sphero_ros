@@ -54,9 +54,9 @@ class SpheroController:
 
         if not param:
             self.param = {
-                'sac_timer'         : 0.1,
-                'sensor_timer'      : 0.01,
-                'eid_timer'         : 0.5,
+                'sac_timer'         : 0.2,
+                'sensor_timer'      : 0.1,
+                'eid_timer'         : 0.2,
             }
 
         rospy.loginfo("Creating Sphero Controller Class")
@@ -84,13 +84,13 @@ class SpheroController:
         self.system = Single_Integrator() # init model
 
         self.T = 0.8
-        self.ts = 1./10.
+        self.ts = self.param['sac_timer']
 
         self.sac = SAC(self.system, self.cost)
 
         self.ck0 = np.zeros(coef+1)
         self.ck0[0,0] = 1
-        self.n_past = 1.0/0.1
+        self.n_past = 1.0/self.ts
         self.xpast = [np.array([0.,0.])]
         self.tcurr = 0
         self.tpast = [0.0]
@@ -111,12 +111,13 @@ class SpheroController:
 
         # subscribers
         self.odom_sub = rospy.Subscriber('odomRobot', Pose, self._get_odometry ,queue_size=1)
-        self.target_sub = rospy.Subscriber('odomTennisBall', Pose, self._get_target, queue_size=1)
+        self.target_sub = rospy.Subscriber('odomTarget', Pose, self._get_target, queue_size=1)
 
         # publishers
         self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=2)
         self.angular_velocity_pub = rospy.Publisher('set_angular_velocity', Float32, queue_size=1)
         self.heading_pub = rospy.Publisher('set_heading', Float32, queue_size=1)
+        self.vk_pub = rospy.Publisher('vk', Float32, queue_size=1)
         self.dir_heading_pub = rospy.Publisher('dir_heading', Twist, queue_size=1)
         self.reset_loc_pub = rospy.Publisher('reset_loc', Float32, queue_size=1)
         # mode indicators for the sphero
@@ -133,15 +134,23 @@ class SpheroController:
         Method that will keep the sensor class + the ergodic metric class
         Updates EID depending on whether collision is detected or not
         '''
+        print 'Updating EID...'
         self.sensor._eid() # update the eid
         self.cost.update_phik(self.sensor.eid.ravel(), [self.sensor.state_space[0].ravel(), self.sensor.state_space[1].ravel()]) # update the phik
+        print 'Done updating EID!'
 
     def _get_target(self, data):
         ''' update the target's position in the world '''
         self.sensor.param = np.array([data.position.x, 1-data.position.y])# target location
         print 'target loc: ',self.sensor.param
         vk = self.sensor.h(self.x0[0:2]) # get the robot's state and the targets state and find the angle between
+        print vk
+        if vk is None:
+            self.vk_pub.publish(Float32(10))
+        else:
+            self.vk_pub.publish(Float32(vk))
         self.sensor.update(self.x0, vk) # update the ekf
+        print 'Updating sensor measurements: ', vk, self.sensor.cov
 
     def _get_odometry(self, data):
         ''' update the robot's position in the world '''
@@ -158,7 +167,7 @@ class SpheroController:
     def _get_control(self, data):
         ''' Get the SAC controller and control the sphero'''
         (_, u2) = self.sac.control(self.x0, self.ck0, self.u0, self.tcurr, self.T)
-        self.u = u2(self.tcurr)*0.1
+        self.u = u2(self.tcurr)*0.12
         print self.u
         self.cmd_vel_pub.publish(Twist(Vector3(int(self.u[0]*255),int(self.u[1]*255),0.0), Vector3(0.0,0.0,0.0)))
 
