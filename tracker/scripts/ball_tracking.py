@@ -37,12 +37,10 @@ class BallTracker:
         # argument parser
         ap = argparse.ArgumentParser()
         ap.add_argument("-v", "--video", help="path to the (optional) video file")
-        ap.add_argument("-cn", "--cam_number", type=int, default=0, help="camera path")
+        ap.add_argument("-camera", "--cam_number", type=int, default=0, help="camera path")
         ap.add_argument("-b", "--buffer", type=int, default=64, help="max buffer size")
         ap.add_argument("-c", "--config", type=int, default=1, help="configure settings")
         self.args = vars(ap.parse_args())
-
-
 
         cv2.namedWindow('Image') # make a window named image
         # if video not supplied, get camera
