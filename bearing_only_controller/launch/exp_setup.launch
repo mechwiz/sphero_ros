@@ -1,4 +1,15 @@
 <launch>
+    <arg name="config" default="false"/>
 
+    <group unless="$(arg config)">
+        <include file="$(find sphero_node)/nodes/launch/sphero.launch"/>
+        <include file="$(find tracker)/launch/tracker.launch"/>
+        <node name="sphero_controller" pkg="bearing_only_controller" type="controller.py"/>
+    </group>
 
+    <group if="$(arg config)">
+        <include file="$(find sphero_node)/nodes/launch/sphero.launch"/>
+        <node name="joystick" pkg="joy" type="joy_node" />
+        <include file="$(find sphero_ps3)/launch/contr.launch"/>
+    </group>
 </launch>

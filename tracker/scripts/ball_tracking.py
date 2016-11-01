@@ -37,10 +37,10 @@ class BallTracker:
         # argument parser
         ap = argparse.ArgumentParser()
         ap.add_argument("-v", "--video", help="path to the (optional) video file")
-        ap.add_argument("-camera", "--cam_number", type=int, default=0, help="camera path")
+        ap.add_argument("-camera", "--cam_number", type=int, default=1, help="camera path")
         ap.add_argument("-b", "--buffer", type=int, default=64, help="max buffer size")
         ap.add_argument("-c", "--config", type=int, default=1, help="configure settings")
-        self.args = vars(ap.parse_args())
+        self.args = vars(ap.parse_args(rospy.myargv()[1:]))
 
         cv2.namedWindow('Image') # make a window named image
         # if video not supplied, get camera
@@ -137,9 +137,7 @@ class BallTracker:
                 else:
                     self.drawObject(center, x, y, radius, name=thing.name)
                 l1.append((int(thing.x0[0]), int(thing.x0[1])))
-        print self.__vk
         if self.__vk < 5 and len(l1)>=2:
-            print 'vk vals: ::::', self.__vk
             cv2.line(self.frame, l1[0], l1[1], (255,0,0), 5)
 
     def configure_tracking(self):

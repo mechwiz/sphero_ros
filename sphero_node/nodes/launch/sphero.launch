@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="sphero_node" type="sphero.py" name="sphero" output="screen"/>
+</launch>

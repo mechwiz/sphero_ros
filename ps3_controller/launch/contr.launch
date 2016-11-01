@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="sphero_ps3" type="controller.py" name="sphero_ps3" output="screen"/>
+</launch>
