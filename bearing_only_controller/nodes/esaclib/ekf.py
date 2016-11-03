@@ -27,8 +27,8 @@ class EKF:
         self.n_meas = 1
         self.cov = cov
         # self.Q = np.zeros([self.n_param]*2)
-        self.Q = np.diag([1.0/20.0 ** 2]*2)
-        self.__Q = [1.0/20.0 ]*2
+        self.Q = np.diag([1.0/10.0 ** 2]*2)
+        self.__Q = [1.0/10.0 ]*2
         self.R = np.diag([0.1 ** 2]*self.n_meas)
         self.invR = np.linalg.inv(self.R)
         self.belief = multivariate_normal(self.mean, self.cov)

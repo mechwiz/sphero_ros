@@ -34,6 +34,8 @@ from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose, Twist, Vector3
 from sphero_node.msg import SpheroCollision
 from std_msgs.msg import ColorRGBA, Float32, Bool
+from rospy.numpy_msg import numpy_msg
+from rospy_tutorials.msg import Floats
 
 ####
 # SAC imports... going to make an include folder for this... maybe even a struct
@@ -47,6 +49,7 @@ from numpy import exp
 import sys
 from scipy import interpolate
 
+
 class SpheroController:
 
     def __init__(self, param=None):
@@ -54,7 +57,7 @@ class SpheroController:
 
         if not param:
             self.param = {
-                'sac_timer'         : 0.2,
+                'sac_timer'         : 0.1,
                 'sensor_timer'      : 0.1,
                 'eid_timer'         : 0.2,
             }
@@ -120,6 +123,12 @@ class SpheroController:
         self.vk_pub = rospy.Publisher('vk', Float32, queue_size=1)
         self.dir_heading_pub = rospy.Publisher('dir_heading', Twist, queue_size=1)
         self.reset_loc_pub = rospy.Publisher('reset_loc', Float32, queue_size=1)
+
+        # publishers for recording data
+        self.phik_pub = rospy.Publisher('phik', numpy_msg(Floats), queue_size=1)
+        self.mean_pub = rospy.Publisher('mean', numpy_msg(Floats), queue_size=1)
+        self.cov_pub = rospy.Publisher('cov', numpy_msg(Floats), queue_size=1)
+
         # mode indicators for the sphero
         self.back_led_pub = rospy.Publisher('set_back_led', Float32, queue_size=1)
         self.color_pub = rospy.Publisher('set_color', ColorRGBA, queue_size=1)
@@ -137,19 +146,28 @@ class SpheroController:
         print 'Updating EID...'
         self.sensor._eid() # update the eid
         self.cost.update_phik(self.sensor.eid.ravel(), [self.sensor.state_space[0].ravel(), self.sensor.state_space[1].ravel()]) # update the phik
+        self.phik_pub(self.cost.phik.ravel().astype(np.float32)) # publish the unwraveled phik
         print 'Done updating EID!'
 
     def _get_target(self, data):
         ''' update the target's position in the world '''
-        self.sensor.param = np.array([data.position.x, 1-data.position.y])# target location
+        temp_target = np.array([data.position.x, 1-data.position.y])# target location
+        if np.linalg.norm(temp_target-self.x0) > 0.2:
+            self.sensor.param = temp_target
         print 'target loc: ',self.sensor.param
-        vk = self.sensor.h(self.x0[0:2]) # get the robot's state and the targets state and find the angle between
-        print vk
+        vk = self.sensor.h(self.x0[0:2])# get the robot's state and the targets state and find the angle between
+        if vk is not None:
+            vk += np.random.normal(0,0.1) # add noise
         if vk is None:
             self.vk_pub.publish(Float32(10))
         else:
             self.vk_pub.publish(Float32(vk))
-        self.sensor.update(self.x0, vk) # update the ekf
+        try:
+            self.sensor.update(self.x0, vk) # update the ekf
+        except:
+            pass
+        self.mean_pub.publish(self.sensor.mean) # publish the mean
+        self.cov_pub.publish(self.sensor.cov.ravel()) # publish the covariance
         print 'Updating sensor measurements: ', vk, self.sensor.cov
 
     def _get_odometry(self, data):
@@ -166,10 +184,12 @@ class SpheroController:
 
     def _get_control(self, data):
         ''' Get the SAC controller and control the sphero'''
+        # self.color_pub.publish(ColorRGBA(0.2,0.2,0.2,0))
         (_, u2) = self.sac.control(self.x0, self.ck0, self.u0, self.tcurr, self.T)
         self.u = u2(self.tcurr)*0.12
         print self.u
         self.cmd_vel_pub.publish(Twist(Vector3(int(self.u[0]*255),int(self.u[1]*255),0.0), Vector3(0.0,0.0,0.0)))
+        print 'success!!! sent command'
 
 if __name__ == '__main__':
     sac = SpheroController()

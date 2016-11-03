@@ -13,9 +13,10 @@ from ball_tracking import BallTracker
 from filtered_objects import Sphero, Light
 from filtered_objects import TennisBall
 if __name__ == '__main__':
-    rb = TennisBall()
+    rb = Light()
     sb = Sphero()
     tracker = BallTracker(objects_to_track=[rb,sb])
+    # tracker = BallTracker()
     try:
         tracker.spin()
     except KeyboardInterrupt:

@@ -123,20 +123,39 @@ class BallTracker:
                 c = max(cnts, key=cv2.contourArea)
                 M = cv2.moments(c)
                 ((x,y), radius) = cv2.minEnclosingCircle(c)
-                pose = Pose(Point(x/320.0,y/320.0,0.0), Quaternion(0,0,0,1))
+                if thing.name == "Robot":
+                    print 'rbot:, ',radius
+                    if radius < 15.0:
+                        pose = Pose(Point(x/320.0,y/320.0,0.0), Quaternion(0,0,0,1))
 
-                self.odom_pub[i].publish(pose) # publish the data
+                        self.odom_pub[i].publish(pose) # publish the data
 
-                center = (int(M["m10"] / M["m00"]), int( M["m01"] / M["m00"] ))
-                thing.x0 = np.array([x,y])
-                thing.center = center
-                thing.radius = radius
+                        center = (int(M["m10"] / M["m00"]), int( M["m01"] / M["m00"] ))
+                        thing.x0 = np.array([x,y])
+                        thing.center = center
+                        thing.radius = radius
 
-                if hasattr(thing, 'draw_me'):
-                    thing.draw_me(self.frame)
+                        if hasattr(thing, 'draw_me'):
+                            thing.draw_me(self.frame)
+                        else:
+                            self.drawObject(center, x, y, radius, name=thing.name)
+                        l1.append((int(thing.x0[0]), int(thing.x0[1])))
                 else:
-                    self.drawObject(center, x, y, radius, name=thing.name)
-                l1.append((int(thing.x0[0]), int(thing.x0[1])))
+                    if radius > 15:
+                        pose = Pose(Point(x/320.0,y/320.0,0.0), Quaternion(0,0,0,1))
+
+                        self.odom_pub[i].publish(pose) # publish the data
+
+                        center = (int(M["m10"] / M["m00"]), int( M["m01"] / M["m00"] ))
+                        thing.x0 = np.array([x,y])
+                        thing.center = center
+                        thing.radius = radius
+
+                        if hasattr(thing, 'draw_me'):
+                            thing.draw_me(self.frame)
+                        else:
+                            self.drawObject(center, x, y, radius, name=thing.name)
+                        l1.append((int(thing.x0[0]), int(thing.x0[1])))
         if self.__vk < 5 and len(l1)>=2:
             cv2.line(self.frame, l1[0], l1[1], (255,0,0), 5)
 
@@ -179,7 +198,7 @@ class BallTracker:
 
     def spin(self):
         ''' Actual code that infinitely loops'''
-        r = rospy.Rate(20.0)
+        r = rospy.Rate(10.0)
         # actual ball tracking loop
         while not rospy.is_shutdown(): # infinite loop that will stop when KeyboardInterrupt is raised
             (grabbed, self.frame) = self.camera.read() # grab the frame
