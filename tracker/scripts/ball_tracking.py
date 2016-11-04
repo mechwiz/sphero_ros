@@ -159,6 +159,7 @@ class BallTracker:
         if self.__vk < 5 and len(l1)>=2:
             cv2.line(self.frame, l1[0], l1[1], (255,0,0), 5)
 
+
     def configure_tracking(self):
         '''
         Configure the tracking thresholds on opencv
@@ -190,11 +191,14 @@ class BallTracker:
                     ((x,y), radius) = cv2.minEnclosingCircle(cnts[i])
                     pose = Pose(Point(x/320.0,y/320.0,0.0), Quaternion(0,0,0,1))
                     self.odom_pub[i].publish(pose) # publish the data
-                    print "Area: ,", M["m00"]
                     center = (int(M["m10"] / M["m00"]), int( M["m01"] / M["m00"] ))
                     self.drawObject(center, x, y, radius)
 
         cv2.imshow('BGR', self.mask) # just to check on the mask
+
+    def drawTime(self):
+        print rospy.get_time()
+        cv2.putText(self.frame, 'ros time: ' + str(rospy.get_time()) , (int(320*0.01), int(320*0.05)), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0,255,255))
 
     def spin(self):
         ''' Actual code that infinitely loops'''
@@ -210,6 +214,7 @@ class BallTracker:
                 self.configure_tracking() # if there was not an explicit list passed
             else:
                 self.track_filtered_objects() # if there was an explicit list passed
+            self.drawTime()
             cv2.imshow('Image', self.frame)
             key = cv2.waitKey(1) & 0xFF
             if key == ord("q"):
