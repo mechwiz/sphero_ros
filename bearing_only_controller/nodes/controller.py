@@ -146,18 +146,19 @@ class SpheroController:
         print 'Updating EID...'
         self.sensor._eid() # update the eid
         self.cost.update_phik(self.sensor.eid.ravel(), [self.sensor.state_space[0].ravel(), self.sensor.state_space[1].ravel()]) # update the phik
-        self.phik_pub(self.cost.phik.ravel().astype(np.float32)) # publish the unwraveled phik
+        print self.cost.phik.ravel()
+        self.phik_pub.publish(self.cost.phik.ravel()) # publish the unwraveled phik
         print 'Done updating EID!'
 
     def _get_target(self, data):
         ''' update the target's position in the world '''
         temp_target = np.array([data.position.x, 1-data.position.y])# target location
-        if np.linalg.norm(temp_target-self.x0) > 0.2:
-            self.sensor.param = temp_target
-        print 'target loc: ',self.sensor.param
+        # if np.linalg.norm(temp_target-self.x0) > 0.2:
+        self.sensor.param = temp_target
+        # print 'target loc: ',self.sensor.param
         vk = self.sensor.h(self.x0[0:2])# get the robot's state and the targets state and find the angle between
         if vk is not None:
-            vk += np.random.normal(0,0.1) # add noise
+            vk += 0*np.random.normal(0,0.1) # add noise
         if vk is None:
             self.vk_pub.publish(Float32(10))
         else:
@@ -166,13 +167,14 @@ class SpheroController:
             self.sensor.update(self.x0, vk) # update the ekf
         except:
             pass
-        self.mean_pub.publish(self.sensor.mean) # publish the mean
-        self.cov_pub.publish(self.sensor.cov.ravel()) # publish the covariance
+        self.mean_pub.publish(self.sensor.mean.astype(np.float32)) # publish the mean
+        self.cov_pub.publish(self.sensor.cov.ravel().astype(np.float32)) # publish the covariance
         print 'Updating sensor measurements: ', vk, self.sensor.cov
 
     def _get_odometry(self, data):
         ''' update the robot's position in the world '''
         self.x0 = np.array([data.position.x,1-data.position.y])
+        print 'rob odom: ',self.x0
     # def _sense(self, data):
     #     '''
     #     Update the EKF estimate of the target
@@ -187,9 +189,7 @@ class SpheroController:
         # self.color_pub.publish(ColorRGBA(0.2,0.2,0.2,0))
         (_, u2) = self.sac.control(self.x0, self.ck0, self.u0, self.tcurr, self.T)
         self.u = u2(self.tcurr)*0.12
-        print self.u
         self.cmd_vel_pub.publish(Twist(Vector3(int(self.u[0]*255),int(self.u[1]*255),0.0), Vector3(0.0,0.0,0.0)))
-        print 'success!!! sent command'
 
 if __name__ == '__main__':
     sac = SpheroController()

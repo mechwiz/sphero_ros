@@ -16,7 +16,7 @@ class BearingOnly(EKF, EID):
         self.n_param = len(self.param)
         self._hdx = np.zeros((self.n_meas, self.n_param))
         self.__drop_off = 0.3
-        self.__Rv = 0.01 ** 2
+        self.__Rv = 0.1 ** 2
 
     def h(self, sensor_state, param=None):
         ''' measurement model '''
@@ -25,7 +25,7 @@ class BearingOnly(EKF, EID):
             if np.sqrt((self.param[1] - sensor_state[1])**2 + (self.param[0] - sensor_state[0])**2) > self.__drop_off:
                 return None
             else:
-                return wrap2Pi(np.arctan2( self.param[1] - sensor_state[1] , self.param[0] - sensor_state[0] )) + np.random.normal(0, self.__Rv)
+                return wrap2Pi(np.arctan2( self.param[1] - sensor_state[1] , self.param[0] - sensor_state[0] ) + np.random.normal(0, self.__Rv))
         else:
             return wrap2Pi(np.arctan2( param[1] - sensor_state[1] , param[0] - sensor_state[0] ))
 

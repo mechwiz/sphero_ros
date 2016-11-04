@@ -34,10 +34,10 @@ class EKF:
         self.belief = multivariate_normal(self.mean, self.cov)
 
     def f(self, param):
-        return param + 0*np.random.normal(0, self.__Q)
+        return param #+ 0*np.random.normal(0, self.__Q)
 
     def fdx(self, param):
-        return np.eye(self.n_param) + 0*np.random.normal(0, self.__Q)
+        return np.eye(self.n_param) #+ 0*np.random.normal(0, self.__Q)
 
     def h(self):
         return None
@@ -50,10 +50,11 @@ class EKF:
         ###################
         # prediction steps
         ###################
-        xk = self.f(self.mean) # predict the measurement you expect
+        xk = self.mean#self.f(self.mean) # predict the measurement you expect
         A = self.fdx(sensor_state) # linearize parameter est
         H = self.hdx(sensor_state, xk) # linearize observation est
         P = A.dot(self.cov).dot(A.T) + self.Q # predicted covariance
+
         ###################
         # update steps
         ###################
@@ -67,5 +68,6 @@ class EKF:
             self.belief = multivariate_normal(self.mean, self.cov)
         else:
             self.mean = xk
-            self.cov = P
-            self.belief = multivariate_normal(self.mean, self.cov)
+            if np.linalg.det(P) > 0:
+                self.cov = P
+                self.belief = multivariate_normal(self.mean, self.cov)
