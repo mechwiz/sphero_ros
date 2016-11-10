@@ -21,7 +21,7 @@ class EID:
         # self.state_space[1] = self.state_space[1].ravel()
         self.param_lim = [[0,1],[0,1]]
         self.x_lim = [[0,1],[0,1]]
-        self.__n = 100 # this changes the phik, dont know why
+        self.__n = 200 # this changes the phik, dont know why
         self.psamp = [np.random.uniform(low=i[0], high=i[1], size=self.__n) for i in self.param_lim]
     def _fim(self, x, y, xc, yc):
 
@@ -41,19 +41,8 @@ class EID:
         # xsamp = [np.random.uniform(low=i[0], high=i[1], size=self.n) for i in self.x_lim]
         self.psamp = [np.random.uniform(low=i[0], high=i[1], size=self.__n) for i in self.param_lim]
 
-        # start = time.time()
         eim = map(self._eim, self.state_space[0].ravel(), self.state_space[1].ravel())
-        # end = time.time()
-        # print 'EIM: ', end-start
 
-        # start = time.time()
         eid = map(np.linalg.det, eim)
-        # end = time.time()
-        # print 'EID: ', end-start
-        # normalize
-        eid /= np.sum(eid)/float(self.__n)
-        # self.eid = eid
+        eid /= np.sum(eid)/float(self.ndiv**2)
         self.eid = eid.reshape(self.state_space[0].shape)
-        # plt.imshow(self.eid, extent=(0,1,0,1), origin='lower')
-        # plt.colorbar()
-        # plt.show()

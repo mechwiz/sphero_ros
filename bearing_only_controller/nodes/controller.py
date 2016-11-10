@@ -59,7 +59,7 @@ class SpheroController:
             self.param = {
                 'sac_timer'         : 0.1,
                 'sensor_timer'      : 0.1,
-                'eid_timer'         : 0.2,
+                'eid_timer'         : 0.2, # twice the sac rate
             }
 
         rospy.loginfo("Creating Sphero Controller Class")
@@ -86,14 +86,14 @@ class SpheroController:
         self.u0 = lambda t: np.array([0.,0.])
         self.system = Single_Integrator() # init model
 
-        self.T = 0.8
+        self.T = 0.5
         self.ts = self.param['sac_timer']
 
         self.sac = SAC(self.system, self.cost)
 
         self.ck0 = np.zeros(coef+1)
         self.ck0[0,0] = 1
-        self.n_past = 1.0/self.ts
+        self.n_past = 0.4/self.ts
         self.xpast = [np.array([0.,0.])]
         self.tcurr = 0
         self.tpast = [0.0]

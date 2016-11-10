@@ -63,11 +63,15 @@ class EKF:
             S = H.dot(P).dot(H.T) + self.R
             K = P.dot(H.T).dot(np.linalg.inv(S)) # kalman gain
             # assign the new mean and cov
-            self.mean = xk + K.dot(y)
+            self.mean = xk + 0.2*K.dot(y)
             self.cov = (np.eye(self.n_param) - K.dot(H)).dot(P)
+            self.cov[1,0] = 0.0
+            self.cov[0,1] = 0.0
             self.belief = multivariate_normal(self.mean, self.cov)
         else:
             self.mean = xk
             if np.linalg.det(P) > 0:
                 self.cov = P
+                self.cov[1,0] = 0.0
+                self.cov[0,1] = 0.0
                 self.belief = multivariate_normal(self.mean, self.cov)

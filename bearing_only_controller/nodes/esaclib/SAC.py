@@ -27,7 +27,7 @@ class SAC:
 
         '''
         self.gamma = -555.
-        self.omega = 0.55
+        self.omega = 0.25 # 0.55
         self.dtinit = 0.3
 
         '''
