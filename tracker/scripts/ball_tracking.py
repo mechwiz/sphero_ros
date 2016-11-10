@@ -202,7 +202,7 @@ class BallTracker:
 
     def spin(self):
         ''' Actual code that infinitely loops'''
-        r = rospy.Rate(10.0)
+        r = rospy.Rate(20.0)
         # actual ball tracking loop
         while not rospy.is_shutdown(): # infinite loop that will stop when KeyboardInterrupt is raised
             (grabbed, self.frame) = self.camera.read() # grab the frame
