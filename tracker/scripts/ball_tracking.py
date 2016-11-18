@@ -85,12 +85,18 @@ class BallTracker:
             self.odom_pub = [rospy.Publisher('odom%d' %i, Pose, queue_size=2) for i in range(self.__n_objects)]
         else:
             self.odom_pub = [rospy.Publisher('odom'+obj.name, Pose, queue_size=2) for obj in self._objects_to_track]
-            self.__vk = 10.0
-            self.vk_sub = rospy.Subscriber('vk', Float32, self._get_vk)
+            self.__vk1 = 10.0
+            self.__vk2 = 10.0
+            self.vk_sub1 = rospy.Subscriber('vk1', Float32, self._get_vk1)
+            self.vk_sub2 = rospy.Subscriber('vk2', Float32, self._get_vk2)
+            self.__stat_x = [0.3,0.7]
+            self.__stat_y = [0.5,0.5]
 
-    def _get_vk(self, data):
-        self.__vk = data.data
 
+    def _get_vk1(self, data):
+        self.__vk1 = data.data
+    def _get_vk2(self, data):
+        self.__vk2 = data.data
     def stop_track(self):
         ''' safety camera release '''
         self.camera.release()
@@ -125,40 +131,58 @@ class BallTracker:
                 ((x,y), radius) = cv2.minEnclosingCircle(c)
                 if thing.name == "Robot":
                     print 'rbot:, ',radius
-                    if radius < 15.0:
-                        pose = Pose(Point(x/320.0,y/320.0,0.0), Quaternion(0,0,0,1))
+                    # if True:#radius < 15.0:
+                    pose = Pose(Point(x/320.0,y/320.0,0.0), Quaternion(0,0,0,1))
 
-                        self.odom_pub[i].publish(pose) # publish the data
+                    self.odom_pub[i].publish(pose) # publish the data
 
-                        center = (int(M["m10"] / M["m00"]), int( M["m01"] / M["m00"] ))
-                        thing.x0 = np.array([x,y])
-                        thing.center = center
-                        thing.radius = radius
+                    center = (int(M["m10"] / M["m00"]), int( M["m01"] / M["m00"] ))
+                    thing.x0 = np.array([x,y])
+                    thing.center = center
+                    thing.radius = radius
 
-                        if hasattr(thing, 'draw_me'):
-                            thing.draw_me(self.frame)
-                        else:
-                            self.drawObject(center, x, y, radius, name=thing.name)
-                        l1.append((int(thing.x0[0]), int(thing.x0[1])))
+                    if hasattr(thing, 'draw_me'):
+                        thing.draw_me(self.frame)
+                    else:
+                        self.drawObject(center, x, y, radius, name=thing.name)
+                    l1.append((int(thing.x0[0]), int(thing.x0[1])))
+            if thing.name != "Robot":
+                if thing.name == "Target1":
+                    x,y = (0.3,0.6)
                 else:
-                    if radius > 15:
-                        pose = Pose(Point(x/320.0,y/320.0,0.0), Quaternion(0,0,0,1))
+                    x,y = (0.8,0.3)
+                pose = Pose(Point(x,y,0.0), Quaternion(0,0,0,1))
+                self.odom_pub[i].publish(pose)
+                thing.x0 = np.array([x*320, y*320])
+                thing.center = (int(x*320), int(y*320))
+                thing.radius = 0.5
+                if hasattr(thing, 'draw_me'):
+                    thing.draw_me(self.frame)
+                else:
+                    self.drawObject(center, x*320, y*320, thing.radius, name=thing.name)
+                l1.append((int(thing.x0[0]), int(thing.x0[1])))
 
-                        self.odom_pub[i].publish(pose) # publish the data
-
-                        center = (int(M["m10"] / M["m00"]), int( M["m01"] / M["m00"] ))
-                        thing.x0 = np.array([x,y])
-                        thing.center = center
-                        thing.radius = radius
-
-                        if hasattr(thing, 'draw_me'):
-                            thing.draw_me(self.frame)
-                        else:
-                            self.drawObject(center, x, y, radius, name=thing.name)
-                        l1.append((int(thing.x0[0]), int(thing.x0[1])))
-        if self.__vk < 5 and len(l1)>=2:
+                # else:
+                #     if True:#radius > 2:
+                #         pose = Pose(Point(x/320.0,y/320.0,0.0), Quaternion(0,0,0,1))
+                #
+                #         self.odom_pub[i].publish(pose) # publish the data
+                #
+                #         center = (int(M["m10"] / M["m00"]), int( M["m01"] / M["m00"] ))
+                #         thing.x0 = np.array([x,y])
+                #         thing.center = center
+                #         thing.radius = radius
+                #
+                #         if hasattr(thing, 'draw_me'):
+                #             thing.draw_me(self.frame)
+                #         else:
+                #             self.drawObject(center, x, y, radius, name=thing.name)
+                #         l1.append((int(thing.x0[0]), int(thing.x0[1])))
+        print 'MEAASUREMENTS',self.__vk1, self.__vk2
+        if self.__vk1 < 5 and len(l1)>=2:
             cv2.line(self.frame, l1[0], l1[1], (255,0,0), 5)
-
+        if self.__vk2 < 5 and len(l1)>=3:
+            cv2.line(self.frame, l1[0], l1[2], (255,0,0), 5)
 
     def configure_tracking(self):
         '''

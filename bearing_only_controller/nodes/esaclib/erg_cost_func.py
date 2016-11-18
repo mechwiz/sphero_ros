@@ -41,14 +41,15 @@ class CostFunction:
                 self.phik[i,j] = np.sum(temp)/float(len(state[0]))
 
     def calc_ck(self, x, t):
+        ck_temp = np.zeros(self.coef+1)
 
         x = x(t).T
         for i in range(self.coef[0]+1):
             for j in range(self.coef[1]+1):
                 _fk = self.basis.fk([i,j], x[:,0], x[:,1])
-                self.__ck_temp[i,j] = trapz(_fk, x=t)
+                ck_temp[i,j] = trapz(_fk, x=t)
 
-        return self.__ck_temp
+        return ck_temp
 
     def l(self, x, t, u):
         '''

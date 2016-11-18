@@ -15,8 +15,8 @@ class BearingOnly(EKF, EID):
         self.param = param
         self.n_param = len(self.param)
         self._hdx = np.zeros((self.n_meas, self.n_param))
-        self.__drop_off = 0.3
-        self.__Rv = 0.1 ** 2
+        self.__drop_off = 0.2
+        self.__Rv = 0.1
 
     def h(self, sensor_state, param=None):
         ''' measurement model '''

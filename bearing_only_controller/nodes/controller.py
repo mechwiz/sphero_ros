@@ -49,6 +49,7 @@ from numpy import exp
 import sys
 from scipy import interpolate
 
+# TODO: Need to add the ck0 update values as well as the global timer on the control interval
 
 class SpheroController:
 
@@ -59,12 +60,13 @@ class SpheroController:
             self.param = {
                 'sac_timer'         : 0.1,
                 'sensor_timer'      : 0.1,
-                'eid_timer'         : 0.2, # twice the sac rate
+                'eid_timer'         : 0.5, # twice the sac rate
             }
 
         rospy.loginfo("Creating Sphero Controller Class")
         rospy.init_node('sphero_controller') # init node at class init
 
+        self.__t0 = rospy.get_time() # return init time in seconds
         self._init_sac() # init sac
         self._init_pubsub() # init the publishers and subscribers
         self._init_sac_timers() # initialize the timers
@@ -93,41 +95,54 @@ class SpheroController:
 
         self.ck0 = np.zeros(coef+1)
         self.ck0[0,0] = 1
-        self.n_past = 0.4/self.ts
+        self.n_past = 5# times self.ts
         self.xpast = [np.array([0.,0.])]
         self.tcurr = 0
         self.tpast = [0.0]
 
         # setup initial EID
         div = 40.0
+        xarr = np.linspace(0,1,div)
+        yarr = np.linspace(0,1,div)
+        x,y = np.meshgrid(xarr, yarr)
+        self.__x = x
+        self.__y = y
         X,Y = np.meshgrid(np.arange(0,xlim[0][1],1.0/div), np.arange(0,xlim[1][1],1.0/div))
         self.phi_num = phi(X, Y)
 
-        param = np.array([0.5,0.5])
-        mean = np.array([0.5,0.5])
-        cov = np.diag([0.5]*2)
+        param1 = np.array([0.5,0.5])
+        mean1 = np.array([0.5,0.5])
+        cov1 = np.diag([0.5]*2)
+        param2 = np.array([0.5,0.5])
+        mean2 = np.array([0.5,0.5])
+        cov2 = np.diag([0.5]*2)
 
-        self.sensor = BearingOnly(param, mean, cov)
+        self.sensor1 = BearingOnly(param1, mean1, cov1)
+        self.sensor2 = BearingOnly(param2, mean2, cov2)
 
     def _init_pubsub(self):
         # setup publishers + subribers + timers:
 
         # subscribers
         self.odom_sub = rospy.Subscriber('odomRobot', Pose, self._get_odometry ,queue_size=1)
-        self.target_sub = rospy.Subscriber('odomTarget', Pose, self._get_target, queue_size=1)
+        self.target_sub1 = rospy.Subscriber('odomTarget1', Pose, self._get_target1, queue_size=1)
+        self.target_sub2 = rospy.Subscriber('odomTarget2', Pose, self._get_target2, queue_size=1)
 
         # publishers
         self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=2)
         self.angular_velocity_pub = rospy.Publisher('set_angular_velocity', Float32, queue_size=1)
         self.heading_pub = rospy.Publisher('set_heading', Float32, queue_size=1)
-        self.vk_pub = rospy.Publisher('vk', Float32, queue_size=1)
+        self.vk_pub1 = rospy.Publisher('vk1', Float32, queue_size=1)
+        self.vk_pub2 = rospy.Publisher('vk2', Float32, queue_size=1)
         self.dir_heading_pub = rospy.Publisher('dir_heading', Twist, queue_size=1)
         self.reset_loc_pub = rospy.Publisher('reset_loc', Float32, queue_size=1)
 
         # publishers for recording data
         self.phik_pub = rospy.Publisher('phik', numpy_msg(Floats), queue_size=1)
-        self.mean_pub = rospy.Publisher('mean', numpy_msg(Floats), queue_size=1)
-        self.cov_pub = rospy.Publisher('cov', numpy_msg(Floats), queue_size=1)
+        self.mean_pub1 = rospy.Publisher('mean1', numpy_msg(Floats), queue_size=1)
+        self.cov_pub1 = rospy.Publisher('cov1', numpy_msg(Floats), queue_size=1)
+        self.mean_pub2 = rospy.Publisher('mean2', numpy_msg(Floats), queue_size=1)
+        self.cov_pub2 = rospy.Publisher('cov2', numpy_msg(Floats), queue_size=1)
 
         # mode indicators for the sphero
         self.back_led_pub = rospy.Publisher('set_back_led', Float32, queue_size=1)
@@ -143,52 +158,91 @@ class SpheroController:
         Method that will keep the sensor class + the ergodic metric class
         Updates EID depending on whether collision is detected or not
         '''
-        print 'Updating EID...'
-        self.sensor._eid() # update the eid
-        self.cost.update_phik(self.sensor.eid.ravel(), [self.sensor.state_space[0].ravel(), self.sensor.state_space[1].ravel()]) # update the phik
-        print self.cost.phik.ravel()
-        self.phik_pub.publish(self.cost.phik.ravel()) # publish the unwraveled phik
-        print 'Done updating EID!'
+        # self.sensor1._eid() # update the eid
+        # self.sensor2._eid() # update the eid
+        # eeid1 = self.sensor1.eid
+        # eeid2 = self.sensor1.eid
+        # eeid1 /= eeid1.max()
+        # eeid2 /= eeid2.max()
+        # eeid = eeid1 + eeid2
+        # # eeid /= eeid.max()
+        # eeid /= np.sum(eeid)/len(self.sensor1.state_space[0].ravel())
 
-    def _get_target(self, data):
+        bel1 = self.sensor1.belief.pdf(np.dstack([self.__x,self.__y]))
+        bel1 = bel1/bel1.max()
+        bel2 = self.sensor2.belief.pdf(np.dstack([self.__x,self.__y]))
+        bel2 = bel2/bel2.max()
+        bel = bel1 + bel2
+        bel /= np.sum(bel)/np.product(bel.shape)
+        self.cost.update_phik(bel.ravel(), [self.__x.ravel(), self.__y.ravel()])
+        # self.cost.update_phik(eeid.ravel(), [self.sensor1.state_space[0].ravel(), self.sensor1.state_space[1].ravel()]) # update the phik
+        self.phik_pub.publish(self.cost.phik.ravel()) # publish the unwraveled phik
+
+    def _get_target1(self, data):
         ''' update the target's position in the world '''
         temp_target = np.array([data.position.x, 1-data.position.y])# target location
         # if np.linalg.norm(temp_target-self.x0) > 0.2:
-        self.sensor.param = temp_target
+        self.sensor1.param = temp_target
         # print 'target loc: ',self.sensor.param
-        vk = self.sensor.h(self.x0[0:2])# get the robot's state and the targets state and find the angle between
+        vk = self.sensor1.h(self.x0[0:2])# get the robot's state and the targets state and find the angle between
         if vk is not None:
             vk += 0*np.random.normal(0,0.1) # add noise
         if vk is None:
-            self.vk_pub.publish(Float32(10))
+            self.vk_pub1.publish(Float32(10))
         else:
-            self.vk_pub.publish(Float32(vk))
+            self.vk_pub1.publish(Float32(vk))
         try:
-            self.sensor.update(self.x0, vk) # update the ekf
+            self.sensor1.update(self.x0, vk) # update the ekf
         except:
             pass
-        self.mean_pub.publish(self.sensor.mean.astype(np.float32)) # publish the mean
-        self.cov_pub.publish(self.sensor.cov.ravel().astype(np.float32)) # publish the covariance
-        print 'Updating sensor measurements: ', vk, self.sensor.cov
+        self.mean_pub1.publish(self.sensor1.mean.astype(np.float32)) # publish the mean
+        self.cov_pub1.publish(self.sensor1.cov.ravel().astype(np.float32)) # publish the covariance
+        print 'Updating sensor1 measurements: ', vk, self.sensor1.mean
+        # print 'mean: ', self.sensor1.mean
+    def _get_target2(self, data):
+        ''' update the target's position in the world '''
+        temp_target = np.array([data.position.x, 1-data.position.y])# target location
+        # if np.linalg.norm(temp_target-self.x0) > 0.2:
+        self.sensor2.param = temp_target
+        # print 'target loc: ',self.sensor.param
+        vk = self.sensor2.h(self.x0[0:2])# get the robot's state and the targets state and find the angle between
+        if vk is not None:
+            vk += 0*np.random.normal(0,0.1) # add noise
+        if vk is None:
+            self.vk_pub2.publish(Float32(10))
+        else:
+            self.vk_pub2.publish(Float32(vk))
+        try:
+            self.sensor2.update(self.x0, vk) # update the ekf
+        except:
+            pass
+        self.mean_pub2.publish(self.sensor2.mean.astype(np.float32)) # publish the mean
+        self.cov_pub2.publish(self.sensor2.cov.ravel().astype(np.float32)) # publish the covariance
+        print 'Updating sensor2 measurements: ', vk, self. sensor2.mean
+        # print 'mean: ', self.sensor2.mean
 
     def _get_odometry(self, data):
         ''' update the robot's position in the world '''
         self.x0 = np.array([data.position.x,1-data.position.y])
-        print 'rob odom: ',self.x0
-    # def _sense(self, data):
-    #     '''
-    #     Update the EKF estimate of the target
-    #     '''
-    #     vk = self.sensor.h(self.x0[0:2]) # get the robot's state and the targets state and find the angle between
-    #     print 'Sensor val: ', vk
-    #     self.sensor.update(self.x0, vk) # update the ekf
-
+        if len(self.xpast) < self.n_past:
+            self.xpast.append(self.x0)
+            self.tpast.append(rospy.get_time() - self.__t0) # add the new time
+            x_hist = interpolate.interp1d(self.tpast, np.asarray(self.xpast).T, fill_value="extrapolate")
+            self.ck0 = self.cost.calc_ck(x_hist, self.tpast)/(self.tpast[-1] - self.tpast[0])
+        else:
+            self.xpast.pop(0)
+            self.tpast.pop(0)
+            self.xpast.append(self.x0)
+            self.tpast.append(rospy.get_time() - self.__t0)
+            x_hist = interpolate.interp1d(self.tpast, np.asarray(self.xpast).T, fill_value="extrapolate")
+            self.ck0 = self.cost.calc_ck(x_hist, self.tpast)/(self.tpast[-1] - self.tpast[0])
+        # print 'rob odom: ',self.x0, ' ck0: ', self.ck0[0,0]
 
     def _get_control(self, data):
         ''' Get the SAC controller and control the sphero'''
-        # self.color_pub.publish(ColorRGBA(0.2,0.2,0.2,0))
+        # self.color_pub.publish(ColorRGBA(0.5,0,0.5,0))
         (_, u2) = self.sac.control(self.x0, self.ck0, self.u0, self.tcurr, self.T)
-        self.u = u2(self.tcurr)*0.12
+        self.u = u2(self.tcurr)*0.2
         self.cmd_vel_pub.publish(Twist(Vector3(int(self.u[0]*255),int(self.u[1]*255),0.0), Vector3(0.0,0.0,0.0)))
 
 if __name__ == '__main__':

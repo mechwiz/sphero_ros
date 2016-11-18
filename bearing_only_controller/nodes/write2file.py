@@ -27,12 +27,16 @@ class Write2File(object):
         # Paths to file names
         ################
         self.__phik_path = direc+'/phik.csv'
-        self.__mean_path = direc+'/mean.csv'
-        self.__cov_path = direc+'/cov.csv'
+        self.__mean_path1 = direc+'/mean1.csv'
+        self.__cov_path1 = direc+'/cov1.csv'
+        self.__mean_path2 = direc+'/mean2.csv'
+        self.__cov_path2 = direc+'/cov2.csv'
 
         self.__robot_path = direc+'/robot.csv'
-        self.__target_path = direc+'/target.csv'
-        self.__vk_path = direc+'/vk.csv'
+        self.__target_path1 = direc+'/target1.csv'
+        self.__target_path2 = direc+'/target2.csv'
+        self.__vk_path1 = direc+'/vk1.csv'
+        self.__vk_path2 = direc+'/vk2.csv'
 
         self._init_pubsub()
 
@@ -42,12 +46,15 @@ class Write2File(object):
         # Subscribe to the data from the controller
         ################
         self.__phik_sub = rospy.Subscriber('phik', numpy_msg(Floats), self.__get_phik)
-        self.__mean_sub = rospy.Subscriber('mean', numpy_msg(Floats), self.__get_mean)
-        self.__cov_sub = rospy.Subscriber('cov', numpy_msg(Floats), self.__get_cov)
-
+        self.__mean_sub1 = rospy.Subscriber('mean1', numpy_msg(Floats), self.__get_mean1)
+        self.__cov_sub1 = rospy.Subscriber('cov1', numpy_msg(Floats), self.__get_cov1)
+        self.__mean_sub2 = rospy.Subscriber('mean2', numpy_msg(Floats), self.__get_mean2)
+        self.__cov_sub2 = rospy.Subscriber('cov2', numpy_msg(Floats), self.__get_cov2)
         self.__rob_sub = rospy.Subscriber('odomRobot', Pose, self.__get_odom)
-        self.__target_sub = rospy.Subscriber('odomTarget', Pose, self.__get_target)
-        self.__vk_sub = rospy.Subscriber('vk', Float32, self.__get_vk)
+        self.__target_sub1 = rospy.Subscriber('odomTarget1', Pose, self.__get_target1)
+        self.__target_sub2 = rospy.Subscriber('odomTarget2', Pose, self.__get_target2)
+        self.__vk_sub1 = rospy.Subscriber('vk1', Float32, self.__get_vk1)
+        self.__vk_sub2 = rospy.Subscriber('vk2', Float32, self.__get_vk2)
 
     def __write2file(self, filename, data):
         print 'SAVING'
@@ -68,24 +75,43 @@ class Write2File(object):
     def __get_phik(self, data):
         self.__phik = np.hstack((rospy.get_time(), data.data))
         self.__write2file(self.__phik_path, self.__phik)
-    def __get_mean(self, data):
-        self.__mean = np.hstack((rospy.get_time(), data.data))
-        self.__write2file(self.__mean_path, self.__mean)
-    def __get_cov(self, data):
-        self.__cov = np.hstack((rospy.get_time(), data.data))
-        self.__write2file(self.__cov_path, self.__cov)
+
+    def __get_mean1(self, data):
+        self.__mean1 = np.hstack((rospy.get_time(), data.data))
+        self.__write2file(self.__mean_path1, self.__mean1)
+    def __get_cov1(self, data):
+        self.__cov1 = np.hstack((rospy.get_time(), data.data))
+        self.__write2file(self.__cov_path1, self.__cov1)
+
+    def __get_mean2(self, data):
+        self.__mean2 = np.hstack((rospy.get_time(), data.data))
+        self.__write2file(self.__mean_path2, self.__mean2)
+    def __get_cov2(self, data):
+        self.__cov2 = np.hstack((rospy.get_time(), data.data))
+        self.__write2file(self.__cov_path2, self.__cov2)
+
     def __get_odom(self, data):
         self.__rob = np.array([data.position.x, 1-data.position.y])
         self.__rob = np.hstack((rospy.get_time(), self.__rob))
         self.__write2file(self.__robot_path, self.__rob)
-    def __get_target(self, data):
-        self.__target = np.array([data.position.x, 1-data.position.y])
-        self.__target = np.hstack((rospy.get_time(), self.__target))
-        self.__write2file(self.__target_path, self.__target)
-    def __get_vk(self, data):
-        self.__vk = data.data
-        self.__vk = np.hstack((rospy.get_time(), self.__vk))
-        self.__write2file(self.__vk_path, self.__vk)
+
+    def __get_target1(self, data):
+        self.__target1 = np.array([data.position.x, 1-data.position.y])
+        self.__target1 = np.hstack((rospy.get_time(), self.__target1))
+        self.__write2file(self.__target_path1, self.__target1)
+    def __get_vk1(self, data):
+        self.__vk1 = data.data
+        self.__vk1 = np.hstack((rospy.get_time(), self.__vk1))
+        self.__write2file(self.__vk_path1, self.__vk1)
+
+    def __get_target2(self, data):
+        self.__target2 = np.array([data.position.x, 1-data.position.y])
+        self.__target2 = np.hstack((rospy.get_time(), self.__target2))
+        self.__write2file(self.__target_path2, self.__target2)
+    def __get_vk2(self, data):
+        self.__vk2 = data.data
+        self.__vk2 = np.hstack((rospy.get_time(), self.__vk2))
+        self.__write2file(self.__vk_path2, self.__vk2)
 
 if __name__ == '__main__':
     wf = Write2File()

@@ -85,12 +85,18 @@ class SAC:
         I feel this should probably be a user def function...
         '''
         utemp = []
-        for i in xrange(len(u)):
-            if abs(u[i]) > self.umax[i]:
-                utemp.append(np.sign(u[i])*self.umax[i])
+        u_unit = u/np.linalg.norm(u) # direction vector
+
+        for i,ui in enumerate(u):
+            if abs(ui) > self.umax[i]:
+                # utemp.append(np.sign(u[i])*self.umax[i])
+                u = np.array(self.umax)*u_unit
+                break
             else:
-                utemp.append(u[i])
-        return np.array(utemp)
+                utemp.append(ui)
+                # utemp.append(0)
+        # return np.array(utemp)
+        return u
 
     def uinterval(self, t, tau):
         '''
