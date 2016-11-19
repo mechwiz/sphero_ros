@@ -12,17 +12,17 @@ class EID:
 
     def __init__(self):
 
-        self.ndiv = 10.0
-        self.param_space = np.meshgrid(np.arange(0,1,1./self.ndiv),
-                        np.arange(0,1,1./self.ndiv))
-        self.state_space = np.meshgrid(np.arange(0,1,1./self.ndiv),
-                        np.arange(0,1,1./self.ndiv))
+        self.ndiv = 40.0
+        self.param_space = np.meshgrid(np.linspace(0,1,self.ndiv),
+                        np.linspace(0,1,self.ndiv))
+        self.state_space = np.meshgrid(np.linspace(0,1,self.ndiv),
+                        np.linspace(0,1,self.ndiv))
         # self.state_space[0] = self.state_space[0].ravel()
         # self.state_space[1] = self.state_space[1].ravel()
         self.param_lim = [[0,1],[0,1]]
         self.x_lim = [[0,1],[0,1]]
-        self.__n = 200 # this changes the phik, dont know why
-        self.psamp = [np.random.uniform(low=i[0], high=i[1], size=self.__n) for i in self.param_lim]
+        self.n = 200
+        self.psamp = [np.random.uniform(low=i[0], high=i[1], size=self.n) for i in self.param_lim]
     def _fim(self, x, y, xc, yc):
 
         hdx = self.hdx(np.array([x,y]), np.array([xc, yc]))
@@ -32,14 +32,15 @@ class EID:
 
     def _eim(self, x, y):
         # integrand = map(lambda xc, yc: self._fim(x,y,xc,yc)*self.belief.pdf(np.c_[xc,yc]), self.psamp[0], self.psamp[1])
-        integrand = map(lambda xc, yc: self._fim(x,y,xc,yc)*self.belief.pdf([xc,yc]), self.psamp[0], self.psamp[1])
-        eim = np.sum(integrand, axis=0)/float(self.__n)
+        # integrand = map(lambda xc, yc: self._fim(x,y,xc,yc)*self.belief.pdf([xc,yc]), self.psamp[0], self.psamp[1])
+        # eim = np.sum(integrand, axis=0)/float(self.__n)
+        eim = self._fim(x,y,self.mean[0], self.mean[1])
         return eim
 
     def _eid(self):
         self.inv_cov = np.linalg.inv(self.cov) # do this now to prevent calculating the inverse later
         # xsamp = [np.random.uniform(low=i[0], high=i[1], size=self.n) for i in self.x_lim]
-        self.psamp = [np.random.uniform(low=i[0], high=i[1], size=self.__n) for i in self.param_lim]
+        self.psamp = [np.random.uniform(low=i[0], high=i[1], size=self.n) for i in self.param_lim]
 
         eim = map(self._eim, self.state_space[0].ravel(), self.state_space[1].ravel())
 

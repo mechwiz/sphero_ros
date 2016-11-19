@@ -57,12 +57,9 @@ class Write2File(object):
         self.__vk_sub2 = rospy.Subscriber('vk2', Float32, self.__get_vk2)
 
     def __write2file(self, filename, data):
-        print 'SAVING'
         with open(filename, 'a') as f:
-            print data
             np.savetxt(f, [data])
         f.close()
-        print 'IT IS SAVED'
 
     # def close(self):
     #     self.__phik_path.close()

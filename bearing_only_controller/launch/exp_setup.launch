@@ -3,9 +3,9 @@
 
     <group unless="$(arg config)">
         <!-- <include file="$(find sphero_node)/nodes/launch/sphero.launch"/> -->
-        <!-- <include file="$(find tracker)/launch/tracker.launch"/> -->
+        <include file="$(find tracker)/launch/tracker.launch"/>
         <node name="sphero_controller" pkg="bearing_only_controller" type="controller.py" output="screen"/>
-        <node name="write2file" pkg="bearing_only_controller" type="write2file.py"/>
+        <node name="write2file" pkg="bearing_only_controller" type="write2file.py" output="screen"/>
     </group>
 
     <group if="$(arg config)">

@@ -32,20 +32,21 @@ class BearingOnly(EKF, EID):
     def hdx(self, sensor_state, param=None):
         ''' measurement model wrt to parameter '''
         eps = 1e-5
+        _hdx = np.zeros((self.n_meas, self.n_param))
         if param is None:
             h0 = self.h(sensor_state, self.param)
             for i in range(self.n_param):
                 param_temp = self.param
                 param_temp[i] += eps
-                self._hdx[:,i] = (self.h(sensor_state, param_temp) - h0) / eps
-            return self._hdx
+                _hdx[:,i] = (self.h(sensor_state, param_temp) - h0) / eps
+            return _hdx
         else:
             h0 = self.h(sensor_state, param)
             for i in range(self.n_param):
                 param_temp = param
                 param_temp[i] += eps
-                self._hdx[:,i] = (self.h(sensor_state, param_temp) - h0) / eps
-            return self._hdx
+                _hdx[:,i] = (self.h(sensor_state, param_temp) - h0) / eps
+            return _hdx
     '''
     Explicit model proves so be slightly faster,
     but I am having trouble getting the right equation written for it

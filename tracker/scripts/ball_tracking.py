@@ -89,8 +89,12 @@ class BallTracker:
             self.__vk2 = 10.0
             self.vk_sub1 = rospy.Subscriber('vk1', Float32, self._get_vk1)
             self.vk_sub2 = rospy.Subscriber('vk2', Float32, self._get_vk2)
-            self.__stat_x = [0.3,0.7]
-            self.__stat_y = [0.5,0.5]
+            # self.__stat_1 = [np.random.uniform(0.1,0.9),np.random.uniform(0.1,0.9)]
+            # self.__stat_2 = [np.random.uniform(0.1,0.9),np.random.uniform(0.1,0.9)]
+            vel = 0.02
+            self.__t0 = rospy.get_time()
+            self.__stat_1 = lambda t: np.array([0.3*np.cos(vel*t)+0.5, 0.3*np.sin(vel*t)+0.5])
+            self.__stat_2 = lambda t: self.__stat_1(t+np.pi/vel)
 
 
     def _get_vk1(self, data):
@@ -130,7 +134,6 @@ class BallTracker:
                 M = cv2.moments(c)
                 ((x,y), radius) = cv2.minEnclosingCircle(c)
                 if thing.name == "Robot":
-                    print 'rbot:, ',radius
                     # if True:#radius < 15.0:
                     pose = Pose(Point(x/320.0,y/320.0,0.0), Quaternion(0,0,0,1))
 
@@ -148,9 +151,9 @@ class BallTracker:
                     l1.append((int(thing.x0[0]), int(thing.x0[1])))
             if thing.name != "Robot":
                 if thing.name == "Target1":
-                    x,y = (0.3,0.6)
+                    x,y = self.__stat_1(rospy.get_time()-self.__t0)
                 else:
-                    x,y = (0.8,0.3)
+                    x,y = self.__stat_2(rospy.get_time()-self.__t0)
                 pose = Pose(Point(x,y,0.0), Quaternion(0,0,0,1))
                 self.odom_pub[i].publish(pose)
                 thing.x0 = np.array([x*320, y*320])
@@ -178,7 +181,6 @@ class BallTracker:
                 #         else:
                 #             self.drawObject(center, x, y, radius, name=thing.name)
                 #         l1.append((int(thing.x0[0]), int(thing.x0[1])))
-        print 'MEAASUREMENTS',self.__vk1, self.__vk2
         if self.__vk1 < 5 and len(l1)>=2:
             cv2.line(self.frame, l1[0], l1[1], (255,0,0), 5)
         if self.__vk2 < 5 and len(l1)>=3:
@@ -221,7 +223,6 @@ class BallTracker:
         cv2.imshow('BGR', self.mask) # just to check on the mask
 
     def drawTime(self):
-        print rospy.get_time()
         cv2.putText(self.frame, 'ros time: ' + str(rospy.get_time()) , (int(320*0.01), int(320*0.05)), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0,255,255))
 
     def spin(self):
@@ -230,7 +231,7 @@ class BallTracker:
         # actual ball tracking loop
         while not rospy.is_shutdown(): # infinite loop that will stop when KeyboardInterrupt is raised
             (grabbed, self.frame) = self.camera.read() # grab the frame
-            # self.frame = cv2.resize(self.frame, (500,500))
+            self.frame = cv2.resize(self.frame, (320,320))
             if self.args.get("video") and not grabbed:
                 break # if at end of video, break out of loop
             self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV) # extract the hsv space

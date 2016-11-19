@@ -27,14 +27,14 @@ class EKF:
         self.n_meas = 1
         self.cov = cov
         # self.Q = np.zeros([self.n_param]*2)
-        self.Q = np.diag([0.0001]*2)
-        self.__Q = [ 0.0001 ]*2
+        self.Q = np.diag([0.01]*2)
+        self.__Q = [ 0.01 ]*2
         self.R = np.diag([0.1]*self.n_meas)
         self.invR = np.linalg.inv(self.R)
         self.belief = multivariate_normal(self.mean, self.cov)
 
     def f(self, param):
-        return param #+ 0*np.random.normal(0, self.__Q)
+        return param #+ 0.1*np.random.normal(0, self.__Q)
 
     def fdx(self, param):
         return np.eye(self.n_param) #+ 0*np.random.normal(0, self.__Q)
@@ -65,13 +65,13 @@ class EKF:
             # assign the new mean and cov
             self.mean = xk + 0.2*K.dot(y)
             self.cov = (np.eye(self.n_param) - K.dot(H)).dot(P)
-            self.cov[1,0] = 0.0
-            self.cov[0,1] = 0.0
+            # self.cov[1,0] = 0.0
+            # self.cov[0,1] = 0.0
             self.belief = multivariate_normal(self.mean, self.cov)
         else:
             self.mean = xk
             if np.linalg.det(P) > 0:
                 self.cov = P
-                self.cov[1,0] = 0.0
-                self.cov[0,1] = 0.0
+                # self.cov[1,0] = 0.0
+                # self.cov[0,1] = 0.0
                 self.belief = multivariate_normal(self.mean, self.cov)

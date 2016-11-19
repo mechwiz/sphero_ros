@@ -25,7 +25,7 @@ class Sphero(object):
         self.x0 = np.array([0,0])
         self.center = None
         self.radius = None
-        self.sensor_range = int(0.3*320)
+        self.sensor_range = int(0.2*320)
 
     def draw_me(self, img, vk=None):
         cv2.circle(img, (int(self.x0[0]), int(self.x0[1])), int(self.radius), (0, 255, 0), 2)
