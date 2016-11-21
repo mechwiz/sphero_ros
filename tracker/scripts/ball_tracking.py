@@ -89,12 +89,14 @@ class BallTracker:
             self.__vk2 = 10.0
             self.vk_sub1 = rospy.Subscriber('vk1', Float32, self._get_vk1)
             self.vk_sub2 = rospy.Subscriber('vk2', Float32, self._get_vk2)
-            # self.__stat_1 = [np.random.uniform(0.1,0.9),np.random.uniform(0.1,0.9)]
-            # self.__stat_2 = [np.random.uniform(0.1,0.9),np.random.uniform(0.1,0.9)]
-            vel = 0.02
+            t1 = [np.random.uniform(0.25,0.75),np.random.uniform(0.25,0.75)]
+            t2 = [np.random.uniform(0.25,0.75),np.random.uniform(0.25,0.75)]
+            vel = 0.01
             self.__t0 = rospy.get_time()
-            self.__stat_1 = lambda t: np.array([0.3*np.cos(vel*t)+0.5, 0.3*np.sin(vel*t)+0.5])
+            self.__stat_1 = lambda t: np.array([0.15*np.cos(vel*t)+0.5, 0.15*np.sin(vel*t)+0.5])
             self.__stat_2 = lambda t: self.__stat_1(t+np.pi/vel)
+            # self.__stat_1 = lambda t: np.array(t1)
+            # self.__stat_2 = lambda t: np.array(t2)
 
 
     def _get_vk1(self, data):

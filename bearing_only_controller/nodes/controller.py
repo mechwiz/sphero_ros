@@ -50,6 +50,7 @@ import sys
 from scipy import interpolate
 
 
+PAST = 20
 
 class SpheroController:
 
@@ -60,7 +61,7 @@ class SpheroController:
             self.param = {
                 'sac_timer'         : 0.1,
                 'sensor_timer'      : 0.1,
-                'eid_timer'         : 5*0.1, # twice the sac rate
+                'eid_timer'         : PAST*0.1, # twice the sac rate
             }
 
         rospy.loginfo("Creating Sphero Controller Class")
@@ -74,7 +75,7 @@ class SpheroController:
     def _init_sac(self):
 
         self.x0 = np.array([0.,0.])
-        coef = np.array([3]*2) # number of coefficients
+        coef = np.array([5]*2) # number of coefficients
         xlim = [[0,1],[0,1]] # search space limit
         basis = Basis0(coef, xlim) # basis function (should be inherited by the cost)
         self.xlim = xlim
@@ -97,7 +98,7 @@ class SpheroController:
 
         self.ck0 = np.zeros(coef+1)
         self.ck0[0,0] = 1
-        self.n_past = 5# times self.ts
+        self.n_past = 2*self.T/self.ts
         self.xpast = [np.array([0.,0.])]
         self.tcurr = 0
         self.tpast = [0.0]
@@ -113,11 +114,13 @@ class SpheroController:
         self.phi_num = phi(X, Y)
 
         param1 = np.array([0.5,0.5])
-        mean1 =  np.array([0.5,0.5])#np.random.uniform(0.1,0.9,2)
-        cov1 = np.diag([1.2]*2)
+        # mean1 =  np.array([0.5,0.5])
+        mean1 = np.random.uniform(0.25,0.75,2)
+        cov1 = np.diag([0.5]*2)
         param2 = np.array([0.5,0.5])
-        mean2 = np.array([0.5,0.5])#np.random.uniform(0.1,0.9,2)
-        cov2 = np.diag([1.2]*2)
+        # mean2 = np.array([0.5,0.5])#np.random.uniform(0.1,0.9,2)
+        mean2 = np.random.uniform(0.25,0.75,2)
+        cov2 = np.diag([0.5]*2)
 
         self.sensor1 = BearingOnly(param1, mean1, cov1)
         self.sensor2 = BearingOnly(param2, mean2, cov2)
@@ -126,12 +129,12 @@ class SpheroController:
         # setup publishers + subribers + timers:
 
         # subscribers
-        self.odom_sub = rospy.Subscriber('odomRobot', Pose, self._get_odometry ,queue_size=1)
+        self.odom_sub = rospy.Subscriber('odomRobot', Pose, self._get_odometry ,queue_size=2)
         self.target_sub1 = rospy.Subscriber('odomTarget1', Pose, self._get_target1, queue_size=1)
         self.target_sub2 = rospy.Subscriber('odomTarget2', Pose, self._get_target2, queue_size=1)
 
         # publishers
-        self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=5)
+        self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=2)
         self.angular_velocity_pub = rospy.Publisher('set_angular_velocity', Float32, queue_size=1)
         self.heading_pub = rospy.Publisher('set_heading', Float32, queue_size=1)
         self.vk_pub1 = rospy.Publisher('vk1', Float32, queue_size=1)
@@ -162,18 +165,28 @@ class SpheroController:
         '''
         self.sensor1._eid() # update the eid
         self.sensor2._eid() # update the eid
+        c1 = np.linalg.det(self.sensor1.cov)
+        c2 = np.linalg.det(self.sensor2.cov)
+        c = c1/c2
         eeid1 = self.sensor1.eid
         eeid2 = self.sensor2.eid
+
         eeid1 /= eeid1.max()
         eeid2 /= eeid2.max()
+        # if c1 > 0.5:
+        #     eeid1 = np.ones(eeid1.shape)
+        # if c2 > 0.5:
+        #     eeid2 = np.ones(eeid2.shape)
+        # eeid = np.maximum(eeid1,eeid2)
         eeid = eeid1 + eeid2
         # eeid /= eeid.max()
         eeid /= np.sum(eeid)/np.product(eeid.shape)
 
-        c1 = np.linalg.det(self.sensor1.cov)
-        c2 = np.linalg.det(self.sensor2.cov)
         self.cost.update_phik(eeid.ravel(), [self.sensor1.state_space[0].ravel(), self.sensor1.state_space[1].ravel()]) # update the phik
-        #
+        # c1 = np.linalg.det(self.sensor1.cov)
+        # c2 = np.linalg.det(self.sensor2.cov)
+        # # print 'det cov: ', c1, c2
+        # # if c1 < 0.9 and c2 < 0.9:
         # bel1 = self.sensor1.belief.pdf(np.dstack([self.__x,self.__y]))
         # bel1 = bel1/bel1.max()
         # bel2 = self.sensor2.belief.pdf(np.dstack([self.__x,self.__y]))
@@ -183,7 +196,7 @@ class SpheroController:
         # self.cost.update_phik(bel.ravel(), [self.__x.ravel(), self.__y.ravel()])
 
 
-        self.phik_pub.publish(self.cost.phik.ravel()) # publish the unwraveled phik
+        self.phik_pub.publish(self.cost.phik.ravel().astype(np.float32)) # publish the unwraveled phik
 
     def _get_target1(self, data):
         ''' update the target's position in the world '''
@@ -248,15 +261,15 @@ class SpheroController:
     def _get_control(self, data):
         ''' Get the SAC controller and control the sphero'''
         # self.color_pub.publish(ColorRGBA(0.5,0,0.5,0))
-        t1 = np.linalg.norm(self.sensor1.param - self.sensor1.mean)
+        t1 = np.linalg.norm(self.sensor1.param-self.sensor1.mean)
         t2 = np.linalg.norm(self.sensor2.param-self.sensor2.mean)
         if self.tpast[-1] > 2.5:
-            if t1 > 2e-2 or t2 > 2e-2:
-                print t1,t2
-                (_, u2) = self.sac.control(self.x0, self.ck0, self.u0, self.tcurr, self.T)
-                self.u = u2(self.tcurr)*0.2
-                self.cmd_vel_pub.publish(Twist(Vector3(int(self.u[0]*255),int(self.u[1]*255),0.0), Vector3(0.0,0.0,0.0)))
-            if t1 < 2e-2 and t2 < 2e-2:
+            print t1,t2
+            (_, u2) = self.sac.control(self.x0, self.ck0, self.u0, self.tcurr, self.T)
+            # self.u0 = u2
+            self.u = u2(self.tcurr)*0.2
+            self.cmd_vel_pub.publish(Twist(Vector3(int(self.u[0]*255),int(self.u[1]*255),0.0), Vector3(0.0,0.0,0.0)))
+            if t1 < 2e-2 and t2 < 2e-2 and self.tpast[-1] > 50:
                 print "ALL DONE"
 
 
