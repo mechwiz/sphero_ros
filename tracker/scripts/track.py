@@ -15,8 +15,10 @@ from filtered_objects import TennisBall
 if __name__ == '__main__':
     rb = Light1()
     rb2 = Light2()
+    rb3 = Light2()
+    rb3.name = "Target3"
     sb = Sphero()
-    tracker = BallTracker(objects_to_track=[sb,rb,rb2])
+    tracker = BallTracker(objects_to_track=[sb,rb,rb2,rb3])
     # tracker = BallTracker()
     try:
         tracker.spin()

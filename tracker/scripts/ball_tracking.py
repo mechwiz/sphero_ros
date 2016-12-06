@@ -87,14 +87,18 @@ class BallTracker:
             self.odom_pub = [rospy.Publisher('odom'+obj.name, Pose, queue_size=2) for obj in self._objects_to_track]
             self.__vk1 = 10.0
             self.__vk2 = 10.0
+            self.__vk3 = 10.0
             self.vk_sub1 = rospy.Subscriber('vk1', Float32, self._get_vk1)
             self.vk_sub2 = rospy.Subscriber('vk2', Float32, self._get_vk2)
+            self.vk_sub3 = rospy.Subscriber('vk3', Float32, self._get_vk3)
             t1 = [np.random.uniform(0.25,0.75),np.random.uniform(0.25,0.75)]
             t2 = [np.random.uniform(0.25,0.75),np.random.uniform(0.25,0.75)]
+            t3 = [np.random.uniform(0.25,0.75),np.random.uniform(0.25,0.75)]
             vel = 0.01
             self.__t0 = rospy.get_time()
             self.__stat_1 = lambda t: np.array([0.15*np.cos(vel*t)+0.5, 0.15*np.sin(vel*t)+0.5])
             self.__stat_2 = lambda t: self.__stat_1(t+np.pi/vel)
+            self.__stat_3 = lambda t: self.__stat_1(t+(np.pi/2.0)/vel)
             # self.__stat_1 = lambda t: np.array(t1)
             # self.__stat_2 = lambda t: np.array(t2)
 
@@ -103,6 +107,8 @@ class BallTracker:
         self.__vk1 = data.data
     def _get_vk2(self, data):
         self.__vk2 = data.data
+    def _get_vk3(self, data):
+        self.__vk3 = data.data
     def stop_track(self):
         ''' safety camera release '''
         self.camera.release()
@@ -154,8 +160,10 @@ class BallTracker:
             if thing.name != "Robot":
                 if thing.name == "Target1":
                     x,y = self.__stat_1(rospy.get_time()-self.__t0)
-                else:
+                elif thing.name == "Target2":
                     x,y = self.__stat_2(rospy.get_time()-self.__t0)
+                else:
+                    x,y = self.__stat_3(rospy.get_time()-self.__t0)
                 pose = Pose(Point(x,y,0.0), Quaternion(0,0,0,1))
                 self.odom_pub[i].publish(pose)
                 thing.x0 = np.array([x*320, y*320])
@@ -187,7 +195,8 @@ class BallTracker:
             cv2.line(self.frame, l1[0], l1[1], (255,0,0), 5)
         if self.__vk2 < 5 and len(l1)>=3:
             cv2.line(self.frame, l1[0], l1[2], (255,0,0), 5)
-
+        if self.__vk3 < 5 and len(l1)>=3:
+            cv2.line(self.frame, l1[0], l1[3], (255,0,0), 5)
     def configure_tracking(self):
         '''
         Configure the tracking thresholds on opencv

@@ -12,7 +12,7 @@ class EID:
 
     def __init__(self):
 
-        self.ndiv = 40.0
+        self.ndiv = 20.0
         self.param_space = np.meshgrid(np.linspace(0,1,self.ndiv),
                         np.linspace(0,1,self.ndiv))
         self.state_space = np.meshgrid(np.linspace(0,1,self.ndiv),
@@ -33,7 +33,7 @@ class EID:
         # integrand = map(lambda xc, yc: self._fim(x,y,xc,yc)*self.belief.pdf(np.c_[xc,yc]), self.psamp[0], self.psamp[1])
         # integrand = map(lambda xc, yc: self._fim(x,y,xc,yc)*self.belief.pdf([xc,yc]), self.psamp[0], self.psamp[1])
         # eim = np.sum(integrand, axis=0)/float(self.n)
-        eim = self._fim(x,y,self.mean[0], self.mean[1])
+        eim = self._fim(x,y,self.mean[0], self.mean[1]) + np.linalg.inv(self.cov)
         return eim
 
     def _eid(self):
