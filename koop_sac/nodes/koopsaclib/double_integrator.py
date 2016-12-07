@@ -11,9 +11,10 @@ class DoubleIntegrator(object):
     '''
     def __init__(self,dt):
         # physical parameters of the cart pendulum
-        self.dt = dt
+
         self._nX = 4
         self._nu = 2
+        self.dt = dt
         self.A = np.eye(self._nX) +\
             np.array([
                         [0.,0.,dt,0.],
@@ -52,7 +53,7 @@ class DoubleIntegrator(object):
         return self.B
 
 
-    def simulate(self, x0, u0, t0, tf, args=(None,)):
+    def simulate(self, x0, u0, t0, tf, dt=0.1, args=(None,)):
         '''
         forward simualte the cart pendulum dynamics.
         x0: state at time t0

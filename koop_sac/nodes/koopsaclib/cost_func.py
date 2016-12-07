@@ -8,29 +8,32 @@ class CostFunction:
     '''
     Class for defining the ergodic cost function
     '''
-    def __init__(self, basis, phi, coef, xlim):
+    def __init__(self, dt):
 
-        self.Q = np.diag([10.0]*4)
+        self.dt = dt
+        self.Q = np.diag([100.0,100.0,0.1,0.1])
         self.R = np.diag([0.01]*2)
-
-    def l(self, x, u):
+        self.xd = lambda k : np.array([0.5*np.cos(k)+0.5,0.5*np.sin(2*k)+0.5,0.0,0.0])
+    def l(self, x, u, k):
         '''
         running cost
         '''
-        return 0.5 * x.dot(self.Q).dot(x) + 0.5*u.dot(self.R).dot(u)
 
-    def ldx(self, x, u):
+        return 0.5 * (x-self.xd(k)).dot(self.Q).dot(x-self.xd(k)) + 0.5*u.dot(self.R).dot(u)
+
+    def ldx(self, x, u,k):
         '''
         derivative of running cost wrt to the states
         '''
-        drunning_cost = self.Q.dot(x) + self.R.dot(u)
+        drunning_cost = self.Q.dot(x-self.xd(k))
         return drunning_cost
 
-    def get_cost(self, x, u):
+    def get_cost(self, x, u, t0):
         '''
         J = integral l(x,u) + m(x(T))
         '''
         kf = len(x)
+        J = 0.0
         for k in range(kf-1):
-            J += self.l(x[k], u[k])
+            J += self.l(x[k], u[k], t0+k*self.dt )
         return J

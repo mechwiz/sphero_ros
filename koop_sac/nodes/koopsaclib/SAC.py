@@ -17,9 +17,9 @@ class SAC:
         this works though
         '''
         self.system = system
+        self.dt = self.system.dt
         self.A = self.system.A
         self.B = self.system.B
-        self.dt = self.system.dt
         self.cost = cost
         self.R = self.cost.R
         self.umax = [1.,1.]
@@ -27,7 +27,7 @@ class SAC:
         Need to add the bunches of parameters that go along with SAC, yay.
 
         '''
-        self.gamma = -555.
+        self.gamma = -5.
         self.omega = 0.25 # 0.55
         self.dtinit = 0.3
 
@@ -36,12 +36,12 @@ class SAC:
         '''
         self.rho0 = np.zeros(self.system._nX)
 
-    def rhok(self, rho, x, u, *args):
+    def rhok(self, rho, x, u, k,*args):
         '''
         adjoint differential equation
         x, u: both are functions of time (t)
         '''
-        return -self.cost.ldx(x, u) - self.A.T.dot(rho)
+        return self.cost.ldx(x, u, k) + self.A.T.dot(rho)
 
     def back_sim(self, rho0, x, u, t0, tf, dt=0.1, args=(None,)):
         '''
@@ -54,9 +54,9 @@ class SAC:
         # return (t, interpolate.interp1d(t, rhosol.T, fill_value="extrapolate"))
         N = len(x)
         rho = [None]*N
-        rho[N] = rho0
+        rho[N-1] = rho0
         for i in reversed(range(1,N)):
-            rho[i-1] = self.rhok(rho[i], x[i], u[i])
+            rho[i-1] = self.rhok(rho[i], x[i], u[i-1], tf-self.dt*i)
 
         return rho
 
@@ -81,8 +81,8 @@ class SAC:
         dJdlam = [None]*kf
         for k in xrange(kf):
             f1 = self.system.f(x[k], u[k]) # check if I want to make u def. a list
-            f2 = self.system.f(x(t[k]), ustar[k])
-            dJdlam[k] = rho(t[k]).dot(f2-f1)
+            f2 = self.system.f(x[k], ustar[k])
+            dJdlam[k] = rho[k].dot(f2-f1)
 
         return dJdlam
 
@@ -105,7 +105,7 @@ class SAC:
         # return np.array(utemp)
         return u
 
-    def control(self, x0, ck0, u0, tcurr, T, Jprev=None):
+    def control(self, x0, u0, tcurr, T, Jprev=None):
         '''
         Inputs:
         x0: current system state
@@ -114,11 +114,10 @@ class SAC:
         T: horizon time
         '''
 
-        (t, xsol) = self.system.simulate(x0, u0, tcurr, tcurr+T) # simulate forward dynamics
+        xsol = self.system.simulate(x0, u0[0], tcurr, tcurr+T) # simulate forward dynamics
+        rhosol = self.back_sim(self.rho0, xsol, u0, tcurr, tcurr+T) # back sim adjoint
 
-        (_, rhosol) = self.back_sim(self.rho0, xsol, u0, tcurr, tcurr+T) # back sim adjoint
-
-        Jinit = self.cost.get_cost(xsol, u0) # get the initial cost
+        Jinit = self.cost.get_cost(xsol, u0, tcurr) # get the initial cost
         alpha_d = self.gamma*Jinit # regulate it
         ustar = self.calc_ustar(rhosol, xsol, u0, alpha_d) # get optimal control sequence
         dJdlam = self.calc_dJdlam(ustar, rhosol, xsol, u0) # calc change in cost wrt to application time
