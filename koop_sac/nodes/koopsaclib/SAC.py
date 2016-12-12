@@ -56,8 +56,7 @@ class SAC:
         rho = [None]*N
         rho[N-1] = rho0
         for i in reversed(range(1,N)):
-            rho[i-1] = self.rhok(rho[i], x[i], u[i-1], tf-self.dt*i)
-
+            rho[i-1] = self.rhok(rho[i], x[i], u[i-1], tf-self.dt*(N-i))
         return rho
 
     def calc_ustar(self, rho, x, u, alpha_d):
@@ -113,15 +112,15 @@ class SAC:
         tcurr: current controller time
         T: horizon time
         '''
+        for i in range(1):
+            xsol = self.system.simulate(x0, u0, tcurr, tcurr+T) # simulate forward dynamics
+            rhosol = self.back_sim(self.rho0, xsol, u0, tcurr, tcurr+T) # back sim adjoint
 
-        xsol = self.system.simulate(x0, u0[0], tcurr, tcurr+T) # simulate forward dynamics
-        rhosol = self.back_sim(self.rho0, xsol, u0, tcurr, tcurr+T) # back sim adjoint
-
-        Jinit = self.cost.get_cost(xsol, u0, tcurr) # get the initial cost
-        alpha_d = self.gamma*Jinit # regulate it
-        ustar = self.calc_ustar(rhosol, xsol, u0, alpha_d) # get optimal control sequence
-        dJdlam = self.calc_dJdlam(ustar, rhosol, xsol, u0) # calc change in cost wrt to application time
-        tau = dJdlam.index(min(dJdlam)) # get the most optimal application time
-        u2 = self.sat(ustar[tau]) # get the control at tau and saturate it
-        u0[tau] = u2
+            Jinit = self.cost.get_cost(xsol, u0, tcurr) # get the initial cost
+            alpha_d = self.gamma*Jinit # regulate it
+            ustar = self.calc_ustar(rhosol, xsol, u0, alpha_d) # get optimal control sequence
+            dJdlam = self.calc_dJdlam(ustar, rhosol, xsol, u0) # calc change in cost wrt to application time
+            tau = dJdlam.index(min(dJdlam)) # get the most optimal application time
+            u2 = self.sat(ustar[tau]) # get the control at tau and saturate it
+            u0[tau] = u2
         return u0

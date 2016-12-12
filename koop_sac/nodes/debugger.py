@@ -1,7 +1,9 @@
 from koopsaclib import *
 import numpy as np
-dt = 0.1
-N = 5
+dt = 0.005
+T = 0.1
+N = int(T/dt)
+
 di = DoubleIntegrator(dt)
 cost = CostFunction(dt)
 sac = SAC(di, cost)
@@ -10,15 +12,14 @@ unom = np.array([0.0,0.0])
 u0 = [np.array([0.0,0.0])]*N
 x0 = np.array([0.2,0.3,0.0,0.0])
 tcurr = 0
-T = N*dt
 
 import matplotlib.pyplot as plt
 
 xarr = x0
 import time
-plt.ion()
+# plt.ion()
 
-while tcurr < 50:
+while tcurr < 10:
     ta = time.clock()
     u0 = sac.control(x0, u0, tcurr, T, dt)
     tb = time.clock()
@@ -28,12 +29,11 @@ while tcurr < 50:
     print u0[0]
     u0.pop(0)
     u0.append(unom)
-    plt.clf()
-    plt.step([tcurr+i*dt for i in range(len(u0))],u0)
-    plt.ylim(-sac.umax[0],sac.umax[0])
-    plt.draw()
-    plt.pause(0.01)
-
+    # plt.clf()
+    # plt.step([tcurr+i*dt for i in range(len(u0))],u0)
+    # plt.ylim(-sac.umax[0]-0.2,sac.umax[0]+0.2)
+    # plt.draw()
+    # plt.pause(0.001)
     tcurr += dt
     print x0
 

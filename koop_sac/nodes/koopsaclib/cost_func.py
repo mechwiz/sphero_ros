@@ -12,8 +12,9 @@ class CostFunction:
 
         self.dt = dt
         self.Q = np.diag([100.0,100.0,0.1,0.1])
-        self.R = np.diag([0.01]*2)
-        self.xd = lambda k : np.array([0.5*np.cos(k)+0.5,0.5*np.sin(2*k)+0.5,0.0,0.0])
+        self.R = np.diag([0.001]*2)
+        self.xd = lambda k : np.array([0.3*np.cos(k)+0.5,0.3*np.sin(2*k)+0.5,0.0,0.0])
+        # self.xd = lambda k : np.array([k,0.5*np.sin(k),0.0,0.0])
     def l(self, x, u, k):
         '''
         running cost

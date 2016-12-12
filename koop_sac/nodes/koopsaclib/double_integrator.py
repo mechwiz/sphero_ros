@@ -68,6 +68,6 @@ class DoubleIntegrator(object):
         N = int((tf - t0)/self.dt)
         X = [x0]
         for i in range(N):
-            x0 = self.f(x0, u0)
+            x0 = self.f(x0, u0[i])
             X.append(x0)
         return X
