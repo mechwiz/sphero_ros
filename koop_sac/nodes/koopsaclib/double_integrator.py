@@ -3,6 +3,8 @@ from scipy.integrate import odeint
 from odeint2 import rk4
 from scipy import interpolate
 
+from koopman import Koopman
+
 class DoubleIntegrator(object):
     '''
     default class for a cart pendulum
@@ -29,7 +31,7 @@ class DoubleIntegrator(object):
                         [0.,0.4]
         ])
 
-
+        self.kop = Koopman()
 
     def f(self, x, u, *args):
         '''
@@ -44,13 +46,15 @@ class DoubleIntegrator(object):
         '''
         df/dx linearization
         '''
-        return self.A
+        L = self.kop.K.dot(self.kop.dphi(np.hstack((x,u))));
+
+        return self.A + L[:,0:4]
 
     def fdu(self, x, u):
         '''
         df/du linearization
         '''
-        return self.B
+        return self.B + L[:,4:2]
 
 
     def simulate(self, x0, u0, t0, tf, dt=0.1, args=(None,)):

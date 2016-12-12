@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(bearing_only_controller)
+project(koopman_controller)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp

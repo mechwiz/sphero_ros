@@ -1,4 +1,4 @@
-# bearing only controller : 
+# koopman controller : 
 ##Requirements
  - bluetooth and pybluez must be installed
  - Developed in catkin workspace

@@ -304,7 +304,7 @@ class SpheroController:
             (_, u2) = self.sac.control(self.x0, self.ck0, self.u0, self.tcurr, self.T)
             # self.u0 = u2
             #self.u = u2(self.tcurr)*0.2 #for the other runs
-            self.u = u2(self.tcurr)*0.3
+            self.u = u2(self.tcurr)*0.2
             self.cmd_vel_pub.publish(Twist(Vector3(int(self.u[0]*255),int(self.u[1]*255),0.0), Vector3(0.0,0.0,0.0)))
             if t1 < 2e-2 and t2 < 2e-2 and t2<2e-2 and self.tpast[-1] > 50:
                 print "ALL DONE"

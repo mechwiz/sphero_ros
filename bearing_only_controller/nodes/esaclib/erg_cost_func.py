@@ -20,7 +20,7 @@ class CostFunction:
         self.lamk = np.zeros(self.coef+1)
         for i in range(self.coef[0]+1):
             for j in range(self.coef[1]+1):
-                self.lamk[i,j] = (1+norm([i,j]))**(-3.0/2.0)
+                self.lamk[i,j] = (1+norm([i,j]))**(-4.0/2.0)
 
         # calculate initial phik and ck
         self.phik = np.zeros(self.coef+1)
