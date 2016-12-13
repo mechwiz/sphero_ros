@@ -50,8 +50,6 @@ import sys
 from scipy import interpolate
 
 
-PAST = 20# original
-
 class SpheroController:
 
     def __init__(self, param=None):
@@ -122,7 +120,8 @@ class SpheroController:
             self.u0 = self.sac.control(self.x0, self.u0, self.tcurr, self.T)
             # self.u0 = u2
             #self.u = u2(self.tcurr)*0.2 #for the other runs
-            self.u = self.u0[0]*0.3
+            print self.u0[0]
+            self.u = self.u0[0]
             self.cmd_vel_pub.publish(Twist(Vector3(int(self.u[0]*255),int(self.u[1]*255),0.0), Vector3(0.0,0.0,0.0)))
         self.tcurr += self.ts
 

@@ -18,11 +18,11 @@ class SAC:
         '''
         self.system = system
         self.dt = self.system.dt
-        self.A = self.system.A
-        self.B = self.system.B
+        self.A = self.system.fdx
+        self.B = self.system.fdu
         self.cost = cost
         self.R = self.cost.R
-        self.umax = [1.,1.]
+        self.umax = [0.3]*2
         '''
         Need to add the bunches of parameters that go along with SAC, yay.
 
@@ -41,7 +41,7 @@ class SAC:
         adjoint differential equation
         x, u: both are functions of time (t)
         '''
-        return self.cost.ldx(x, u, k) + self.A.T.dot(rho)
+        return self.cost.ldx(x, u, k) + self.A(x,u).T.dot(rho)
 
     def back_sim(self, rho0, x, u, t0, tf, dt=0.1, args=(None,)):
         '''
@@ -66,7 +66,7 @@ class SAC:
         kf = len(x)-1
         ustar = [None]*kf
         for k in range(kf):
-            B = self.B # might not be constant with koop
+            B = self.B(x[k],u[k]) # might not be constant with koop
             lam = B.T.dot(outer(rho[k], rho[k]).dot(B))
             ustar[k] = np.linalg.inv(lam + self.R.T).dot( lam.dot(u[k]) + \
                             B.T.dot(rho[k])*alpha_d)
@@ -98,8 +98,8 @@ class SAC:
                 # utemp.append(np.sign(u[i])*self.umax[i])
                 u = np.array(self.umax)*u_unit
                 break
-            else:
-                utemp.append(ui)
+            # else:
+                # utemp.append(ui)
                 # utemp.append(0)
         # return np.array(utemp)
         return u
@@ -112,7 +112,7 @@ class SAC:
         tcurr: current controller time
         T: horizon time
         '''
-        for i in range(1):
+        for i in range(2):
             xsol = self.system.simulate(x0, u0, tcurr, tcurr+T) # simulate forward dynamics
             rhosol = self.back_sim(self.rho0, xsol, u0, tcurr, tcurr+T) # back sim adjoint
 

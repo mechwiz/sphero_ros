@@ -295,7 +295,7 @@ class SpheroController:
 
     def _get_control(self, data):
         ''' Get the SAC controller and control the sphero'''
-        # self.color_pub.publish(ColorRGBA(0.5,0,0.5,0))
+        self.color_pub.publish(ColorRGBA(0.5,0,0.5,0))
         t1 = np.linalg.norm(self.sensor1.param-self.sensor1.mean)
         t2 = np.linalg.norm(self.sensor2.param-self.sensor2.mean)
         t3 = np.linalg.norm(self.sensor3.param-self.sensor3.mean)

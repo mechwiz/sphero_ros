@@ -10,6 +10,7 @@
 
     <group if="$(arg config)">
         <!-- <include file="$(find sphero_node)/nodes/launch/sphero.launch"/> -->
+        <include file="$(find tracker)/launch/tracker.launch"/>
         <node name="joystick" pkg="joy" type="joy_node" />
         <include file="$(find sphero_ps3)/launch/contr.launch"/>
     </group>

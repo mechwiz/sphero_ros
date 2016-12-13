@@ -40,21 +40,24 @@ class DoubleIntegrator(object):
         x[2] = xdot
         x[3] = ydot
         '''
-        xkpo = self.A.dot(x) + self.B.dot(u)
+        xkpo = self.A.dot(x) + self.B.dot(u) #+ self.kop.step(x,u)
+        # return self.kop.step(x,u)
         return xkpo
     def fdx(self, x, u):
         '''
         df/dx linearization
         '''
-        L = self.kop.K.dot(self.kop.dphi(np.hstack((x,u))));
-
-        return self.A + L[:,0:4]
+        L = self.kop.K.dot(self.kop.dphi(np.hstack((x,u))))
+        return self.A #+ L[:,0:4]
+        # return L[:,0:4]
 
     def fdu(self, x, u):
         '''
         df/du linearization
         '''
-        return self.B + L[:,4:2]
+        L = self.kop.K.dot(self.kop.dphi(np.hstack((x,u))))
+        return self.B #+ L[:,3:-1]
+        # return L[:,3:-1]
 
 
     def simulate(self, x0, u0, t0, tf, dt=0.1, args=(None,)):

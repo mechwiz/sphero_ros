@@ -12,9 +12,12 @@ class CostFunction:
 
         self.dt = dt
         self.Q = np.diag([100.0,100.0,0.1,0.1])
-        self.R = np.diag([0.001]*2)
-        vel = 0.9
-        self.xd = lambda k : np.array([0.4*np.cos(vel*k)+0.5,0.4*np.sin(2*vel*k)+0.5,0.0,0.0])
+        self.R = np.diag([0.01]*2)
+        vel = 1.0
+        self.xd = lambda k : np.array([0.4*np.cos(vel*k)+0.5,
+                                        0.4*np.sin(2*vel*k)+0.5,
+                                        -0.4*vel*np.sin(vel*k),
+                                        0.4*2*vel*np.sin(2*vel*k)])
         # self.xd = lambda k : np.array([k,0.5*np.sin(k),0.0,0.0])
     def l(self, x, u, k):
         '''
