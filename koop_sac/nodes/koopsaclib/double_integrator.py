@@ -32,6 +32,7 @@ class DoubleIntegrator(object):
         ])
 
         self.kop = Koopman()
+        self._use_koop = False
 
     def f(self, x, u, *args):
         '''
@@ -43,21 +44,29 @@ class DoubleIntegrator(object):
         xkpo = self.A.dot(x) + self.B.dot(u) #+ self.kop.step(x,u)
         # return self.kop.step(x,u)
         return xkpo
+        # return self.kop.step(x,u)
     def fdx(self, x, u):
         '''
         df/dx linearization
         '''
-        L = self.kop.K.dot(self.kop.dphi(np.hstack((x,u))))
-        return self.A #+ L[:,0:4]
-        # return L[:,0:4]
+        L = self.kop.K#.dot(self.kop.dphi(np.hstack((x,u))))
+        # np.set_printoptions(precision=3)
+        # np.set_printoptions(suppress=True)
+        # print L[0:6,0:6]
+        return self.A #+ L[0:4,0:4]
+        # return L[0:6,0:6]
 
     def fdu(self, x, u):
         '''
         df/du linearization
         '''
-        L = self.kop.K.dot(self.kop.dphi(np.hstack((x,u))))
-        return self.B #+ L[:,3:-1]
-        # return L[:,3:-1]
+        # print self.kop.K.shape
+        L = self.kop.K#.T.dot(self.kop.dphi(np.hstack((x,u))))
+        # print L.shape
+        # print L[0:6,0:6]
+        #print L.shape
+        return self.B #+ L[0:4, 3:5]
+        # return L[0:4,3:5]
 
 
     def simulate(self, x0, u0, t0, tf, dt=0.1, args=(None,)):

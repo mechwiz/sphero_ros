@@ -112,7 +112,7 @@ class SAC:
         tcurr: current controller time
         T: horizon time
         '''
-        for i in range(2):
+        for i in range(1):
             xsol = self.system.simulate(x0, u0, tcurr, tcurr+T) # simulate forward dynamics
             rhosol = self.back_sim(self.rho0, xsol, u0, tcurr, tcurr+T) # back sim adjoint
 

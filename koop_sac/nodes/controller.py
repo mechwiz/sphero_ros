@@ -57,7 +57,7 @@ class SpheroController:
 
         if not param:
             self.param = {
-                'sac_timer'         : 0.1,
+                'sac_timer'         : 0.2,
             }
 
         rospy.loginfo("Creating Sphero Controller Class")
@@ -76,7 +76,7 @@ class SpheroController:
 
         self.system = DoubleIntegrator(self.param['sac_timer']) # init model
 
-        self.T = 0.5
+        self.T = 0.4
         self.ts = self.param['sac_timer']
         N = int(self.T/self.ts)
         self.unom = np.array([0.,0.])
