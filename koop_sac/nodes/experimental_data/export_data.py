@@ -16,7 +16,7 @@ for i in range(len(xdat)-1):
 
 xdat = np.hstack((xdat, xvel))
 print tu[0]
-dt = 0.1
+dt = 0.05
 ti = np.arange(tu[0],tx[-1], dt)
 print tx[-1], tu[-1]
 xinterp = interp1d(tx, xdat[:,1:5].T)

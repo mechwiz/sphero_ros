@@ -15,7 +15,7 @@ PUBLISHERS:
 ###########
 import rospy
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Pose, Vector3, Point, Quaternion
+from geometry_msgs.msg import Pose, Vector3, Point, Quaternion, Twist
 from std_msgs.msg import Float32
 ###########
 # Imports for opencv
@@ -82,9 +82,9 @@ class BallTracker:
     def _init_pubsub(self):
 
         if self._objects_to_track is None:
-            self.odom_pub = [rospy.Publisher('odom%d' %i, Pose, queue_size=2) for i in range(self.__n_objects)]
+            self.odom_pub = [rospy.Publisher('odom%d' %i, Pose, queue_size=1) for i in range(self.__n_objects)]
         else:
-            self.odom_pub = [rospy.Publisher('odom'+obj.name, Pose, queue_size=2) for obj in self._objects_to_track]
+            self.odom_pub = [rospy.Publisher('odom'+obj.name, Pose, queue_size=1) for obj in self._objects_to_track]
             self.__vk1 = 10.0
             self.__vk2 = 10.0
             self.__vk3 = 10.0
@@ -212,8 +212,8 @@ class BallTracker:
         self.lower = (int(b), int(g), int(r))
 
         self.mask = cv2.inRange(self.hsv, self.lower, self.upper) # threshold the frame
-        self.mask = cv2.erode(self.mask, None, iterations=2) # erode it
-        self.mask = cv2.dilate(self.mask, None, iterations=2) # dilate it to find the contours
+        self.mask = cv2.erode(self.mask, None, iterations=1) # erode it
+        self.mask = cv2.dilate(self.mask, None, iterations=1) # dilate it to find the contours
 
         # find the contours
         cnts, hierarchy = cv2.findContours(self.mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -238,7 +238,8 @@ class BallTracker:
 
     def spin(self):
         ''' Actual code that infinitely loops'''
-        r = rospy.Rate(20.0)
+        # r = rospy.Rate(20.0)
+        r = rospy.Rate(20)
         # actual ball tracking loop
         while not rospy.is_shutdown(): # infinite loop that will stop when KeyboardInterrupt is raised
             (grabbed, self.frame) = self.camera.read() # grab the frame

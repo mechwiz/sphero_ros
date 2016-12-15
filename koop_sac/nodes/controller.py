@@ -57,7 +57,7 @@ class SpheroController:
 
         if not param:
             self.param = {
-                'sac_timer'         : 0.2,
+                'sac_timer'         : 0.01,
             }
 
         rospy.loginfo("Creating Sphero Controller Class")
@@ -67,6 +67,7 @@ class SpheroController:
         self._init_sac() # init sac
         self._init_pubsub() # init the publishers and subscribers
         self._init_sac_timers() # initialize the timers
+        self.__txdat = rospy.get_time()
 
     def _init_sac(self):
 
@@ -92,10 +93,10 @@ class SpheroController:
         # subscribers
         self.odom_sub = rospy.Subscriber('odomRobot', Pose, self._get_odometry ,queue_size=1)
         # publishers
-        self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=2)# queue_size=2 originally
+        self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)# queue_size=2 originally
         self.angular_velocity_pub = rospy.Publisher('set_angular_velocity', Float32, queue_size=1)
         self.heading_pub = rospy.Publisher('set_heading', Float32, queue_size=1)
-
+        self.target_pub = rospy.Publisher('target', numpy_msg(Floats), queue_size=1)
         self.dir_heading_pub = rospy.Publisher('dir_heading', Twist, queue_size=1)
         self.reset_loc_pub = rospy.Publisher('reset_loc', Float32, queue_size=1)
 
@@ -109,20 +110,29 @@ class SpheroController:
     def _get_odometry(self, data):
         ''' update the robot's position in the world '''
         xcurr = np.array([data.position.x,1-data.position.y])
-        dxdt = (xcurr - self.x0[0:2])/self.ts
+        tcurr = rospy.get_time()
+        dt = tcurr - self.__txdat
+        dxdt = (xcurr - self.x0[0:2])/dt
+        self.__txdat = tcurr
         self.x0 = np.hstack((xcurr, dxdt))
+        print dxdt, dt
         # print 'rob odom: ',self.x0, ' ck0: ', self.ck0[0,0]
 
     def _get_control(self, data):
         ''' Get the SAC controller and control the sphero'''
         # self.color_pub.publish(ColorRGBA(0.5,0,0.5,0))
         if self.tcurr > 2.5:
+            self.target_pub.publish(self.cost.xd(self.tcurr).astype(np.float32))
             self.u0 = self.sac.control(self.x0, self.u0, self.tcurr, self.T)
             # self.u0 = u2
             #self.u = u2(self.tcurr)*0.2 #for the other runs
-            print self.u0[0]
+            # print self.u0[0]
             self.u = self.u0[0]
             self.cmd_vel_pub.publish(Twist(Vector3(int(self.u[0]*255),int(self.u[1]*255),0.0), Vector3(0.0,0.0,0.0)))
+            self.u0.pop(0)
+            self.u0.append(self.unom)
+            if self.tcurr > 20:
+                print 'DONE!!!'
         self.tcurr += self.ts
 
 

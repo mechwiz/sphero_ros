@@ -27,7 +27,7 @@ class SAC:
         Need to add the bunches of parameters that go along with SAC, yay.
 
         '''
-        self.gamma = -5.
+        self.gamma = -2.
         self.omega = 0.25 # 0.55
         self.dtinit = 0.3
 
@@ -91,7 +91,10 @@ class SAC:
         I feel this should probably be a user def function...
         '''
         utemp = []
-        u_unit = u/np.linalg.norm(u) # direction vector
+        if np.linalg.norm(u)<1e-3:
+            return u
+        else:
+            u_unit = u/np.linalg.norm(u) # direction vector
 
         for i,ui in enumerate(u):
             if abs(ui) > self.umax[i]:

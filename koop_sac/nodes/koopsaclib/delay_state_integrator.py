@@ -5,7 +5,7 @@ from scipy import interpolate
 
 from koopman import Koopman
 
-class DoubleIntegrator(object):
+class Delay_State(object):
     '''
     default class for a cart pendulum
     This makes code more generalizable for different integration schemes
@@ -19,17 +19,19 @@ class DoubleIntegrator(object):
         self.dt = dt
         self.A = np.eye(self._nX) +\
             np.array([
-                        [0.,0.,dt,0.],
-                        [0.,0.,0.,dt],
-                        [0.,0.,-0.25,0.],
-                        [0.,0.,0.,-0.25],
+                        [1.8246,-0.0297,-0.8486, 0.0306],
+                        [0.0358, 1.8611, -0.0445, -0.8676],
+                        [1.,0.,0.,0.],
+                        [0.,1.,0.,0.],
                         ])
         self.B = np.array([
+                        [0.0602,0.0060],
+                        [0.0008,0.1160],
                         [0.,0.],
-                        [0.,0.],
-                        [0.4,0.],
-                        [0.,0.4]
+                        [0.,0.]
         ])
+
+        self.bias = np.array([0.0128,0.0108,0.,0.])
 
         self.kop = Koopman()
         self._use_koop = False
@@ -41,7 +43,7 @@ class DoubleIntegrator(object):
         x[2] = xdot
         x[3] = ydot
         '''
-        xkpo = self.A.dot(x) + self.B.dot(u) + self.kop.step(x,u)
+        xkpo = self.A.dot(x) + self.B.dot(u) + self.bias#+ self.kop.step(x,u)
         # return self.kop.step(x,u)
         return xkpo
         # return self.kop.step(x,u)
@@ -52,8 +54,8 @@ class DoubleIntegrator(object):
         L = self.kop.K.dot(self.kop.dphidx(x,u))
         # np.set_printoptions(precision=3)
         # np.set_printoptions(suppress=True)
-        # return self.A + L
-        return self.A + self.kop.K[0:4,0:4]
+        return self.A #+ L
+        # return self.A + self.kop.K[0:4,0:4]
         # return L[0:6,0:6]
 
     def fdu(self, x, u):
@@ -66,8 +68,8 @@ class DoubleIntegrator(object):
         # print L.shape
         # print L[0:6,0:6]
         #print L.shape
-        # return self.B + L
-        return self.B + self.kop.K[0:4,4:6]
+        return self.B #+ L
+        # return self.B + self.kop.K[0:4,4:6]
 
 
     def simulate(self, x0, u0, t0, tf, dt=0.1, args=(None,)):

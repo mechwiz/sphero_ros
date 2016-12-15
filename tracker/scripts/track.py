@@ -18,7 +18,8 @@ if __name__ == '__main__':
     rb3 = Light2()
     rb3.name = "Target3"
     sb = Sphero()
-    tracker = BallTracker(objects_to_track=[sb,rb,rb2,rb3])
+    # tracker = BallTracker(objects_to_track=[sb,rb,rb2,rb3])
+    tracker = BallTracker(objects_to_track=[sb])
     # tracker = BallTracker()
     try:
         tracker.spin()

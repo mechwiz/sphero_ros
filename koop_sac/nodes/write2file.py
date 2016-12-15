@@ -27,8 +27,12 @@ class Write2File(object):
         # Paths to file names
         ###############
 
+        self.__rob = None
+        self.__cmd = None
+        self.__target = None
         self.__robot_path = direc+'/robot.csv'
         self.__cmd_path = direc+'/cmd.csv'
+        self.__target_path = direc+'/target.csv'
         self._init_pubsub()
 
     def _init_pubsub(self):
@@ -40,10 +44,11 @@ class Write2File(object):
         self.__rob_sub = rospy.Subscriber('odomRobot', Pose, self.__get_odom)
 
         self.__cmd_sub = rospy.Subscriber('cmd_vel', Twist, self.__get_cmd)
+        self.__target_sub1 = rospy.Subscriber('target', numpy_msg(Floats), self.__get_target)
 
     def __write2file(self, filename, data):
         with open(filename, 'a') as f:
-            np.savetxt(f, [data])
+            np.savetxt(f, data)
         f.close()
 
     # def close(self):
@@ -54,16 +59,46 @@ class Write2File(object):
     #     self.__robot_path.close()
     #     self.__target_path.close()
     #     self.__vk_path.close()
-    def __get_cmd(self, data):
-        self.__cmd = np.array([data.linear.x,data.linear.y])
-        self.__cmd = np.hstack((rospy.get_time(), self.__cmd))
+    # def __get_cmd(self, data):
+    #     self.__cmd = np.array([data.linear.x,data.linear.y])
+    #     self.__cmd = np.hstack((rospy.get_time(), self.__cmd))
+    #     self.__write2file(self.__cmd_path, self.__cmd)
+    #
+    # def __get_odom(self, data):
+    #     self.__rob = np.array([data.position.x, 1-data.position.y])
+    #     self.__rob = np.hstack((rospy.get_time(), self.__rob))
+    #     self.__write2file(self.__robot_path, self.__rob)
+
+    def close(self):
+        self.__write2file(self.__robot_path, self.__rob)
         self.__write2file(self.__cmd_path, self.__cmd)
+        self.__write2file(self.__target_path, self.__target)
+
+    def __get_target(self, data):
+        dtemp = np.hstack((rospy.get_time(), data.data))
+        if self.__target is None:
+            self.__target = dtemp
+        else:
+            self.__target = np.vstack((self.__target, dtemp))
+
+        # self.__write2file(self.__mean_path1, self.__mean1)
+    def __get_cmd(self, data):
+        d1 = np.array([data.linear.x,data.linear.y])
+        dtemp = np.hstack((rospy.get_time(), d1))
+        if self.__cmd is None:
+            self.__cmd = dtemp
+        else:
+            self.__cmd = np.vstack((self.__cmd, dtemp))
+        # self.__write2file(self.__cmd_path, self.__cmd)
 
     def __get_odom(self, data):
-        self.__rob = np.array([data.position.x, 1-data.position.y])
-        self.__rob = np.hstack((rospy.get_time(), self.__rob))
-        self.__write2file(self.__robot_path, self.__rob)
-
+        d1 = np.array([data.position.x, 1-data.position.y])
+        dtemp = np.hstack((rospy.get_time(), d1))
+        if self.__rob is None:
+            self.__rob = dtemp
+        else:
+            self.__rob = np.vstack((self.__rob, dtemp))
+        # self.__write2file(self.__robot_path, self.__rob)
 
 
 if __name__ == '__main__':
@@ -72,7 +107,6 @@ if __name__ == '__main__':
     # wf.close()
     try:
         rospy.spin()
-        # wf.close()
+        wf.close()
     except KeyboardInterrupt:
-        pass
-        # wf.close()
+        wf.close()
