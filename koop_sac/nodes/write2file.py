@@ -41,7 +41,8 @@ class Write2File(object):
         # Subscribe to the data from the controller
         ################
 
-        self.__rob_sub = rospy.Subscriber('odomRobot', Pose, self.__get_odom)
+        # self.__rob_sub = rospy.Subscriber('odomRobot', Pose, self.__get_odom)
+        self.__rob_sub = rospy.Subscriber('odom', Odometry, self.__get_odom )
 
         self.__cmd_sub = rospy.Subscriber('cmd_vel', Twist, self.__get_cmd)
         self.__target_sub1 = rospy.Subscriber('target', numpy_msg(Floats), self.__get_target)
@@ -91,9 +92,19 @@ class Write2File(object):
             self.__cmd = np.vstack((self.__cmd, dtemp))
         # self.__write2file(self.__cmd_path, self.__cmd)
 
+    # def __get_odom(self, data):
+    #     d1 = np.array([data.position.x, 1-data.position.y])
+    #     dtemp = np.hstack((rospy.get_time(), d1))
+    #     if self.__rob is None:
+    #         self.__rob = dtemp
+    #     else:
+    #         self.__rob = np.vstack((self.__rob, dtemp))
+    #     # self.__write2file(self.__robot_path, self.__rob)
+
     def __get_odom(self, data):
-        d1 = np.array([data.position.x, 1-data.position.y])
-        dtemp = np.hstack((rospy.get_time(), d1))
+        d1 = np.array([data.pose.pose.position.x, data.pose.pose.position.y])
+        vel = np.array([data.twist.twist.linear.x,data.twist.twist.linear.y])
+        dtemp = np.hstack((rospy.get_time(), d1, vel))
         if self.__rob is None:
             self.__rob = dtemp
         else:

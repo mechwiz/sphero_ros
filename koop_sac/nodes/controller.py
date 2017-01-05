@@ -57,7 +57,7 @@ class SpheroController:
 
         if not param:
             self.param = {
-                'sac_timer'         : 0.01,
+                'sac_timer'         : 0.05,
             }
 
         rospy.loginfo("Creating Sphero Controller Class")
@@ -66,18 +66,18 @@ class SpheroController:
         self.__t0 = rospy.get_time() # return init time in seconds
         self._init_sac() # init sac
         self._init_pubsub() # init the publishers and subscribers
+        # self.reset_loc_pub.publish(Float32(1))
         self._init_sac_timers() # initialize the timers
         self.__txdat = rospy.get_time()
 
     def _init_sac(self):
 
         self.x0 = np.array([0.,0.,0.,0.])
-
         self.cost = CostFunction(self.param['sac_timer'])
 
         self.system = DoubleIntegrator(self.param['sac_timer']) # init model
 
-        self.T = 0.4
+        self.T = 0.5
         self.ts = self.param['sac_timer']
         N = int(self.T/self.ts)
         self.unom = np.array([0.,0.])
@@ -91,9 +91,11 @@ class SpheroController:
         # setup publishers + subribers + timers:
 
         # subscribers
-        self.odom_sub = rospy.Subscriber('odomRobot', Pose, self._get_odometry ,queue_size=1)
+        # self.odom_sub = rospy.Subscriber('odomRobot', Pose, self._get_odometry ,queue_size=1)
         # publishers
-        self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)# queue_size=2 originally
+        self.odom_sub = rospy.Subscriber('odom', Odometry, self._get_odometry ,queue_size=1)
+        # publishers
+        self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=2)# queue_size=2 originally
         self.angular_velocity_pub = rospy.Publisher('set_angular_velocity', Float32, queue_size=1)
         self.heading_pub = rospy.Publisher('set_heading', Float32, queue_size=1)
         self.target_pub = rospy.Publisher('target', numpy_msg(Floats), queue_size=1)
@@ -107,16 +109,22 @@ class SpheroController:
     def _init_sac_timers(self):
         self.sac_timer = rospy.Timer(rospy.Duration(self.param['sac_timer']), self._get_control)
 
+    # def _get_odometry(self, data):
+    #     ''' update the robot's position in the world '''
+    #     xcurr = np.array([data.position.x,1-data.position.y])
+    #     tcurr = rospy.get_time()
+    #     dt = tcurr - self.__txdat
+    #     dxdt = (xcurr - self.x0[0:2])/dt
+    #     self.__txdat = tcurr
+    #     self.x0 = np.hstack((xcurr, dxdt))
+    #     print dxdt, dt
+    #     # print 'rob odom: ',self.x0, ' ck0: ', self.ck0[0,0]
     def _get_odometry(self, data):
         ''' update the robot's position in the world '''
-        xcurr = np.array([data.position.x,1-data.position.y])
-        tcurr = rospy.get_time()
-        dt = tcurr - self.__txdat
-        dxdt = (xcurr - self.x0[0:2])/dt
-        self.__txdat = tcurr
+        xcurr = np.array([data.pose.pose.position.x,data.pose.pose.position.y])
+        dxdt = np.array([data.twist.twist.linear.x,data.twist.twist.linear.y])
         self.x0 = np.hstack((xcurr, dxdt))
-        print dxdt, dt
-        # print 'rob odom: ',self.x0, ' ck0: ', self.ck0[0,0]
+        print self.x0
 
     def _get_control(self, data):
         ''' Get the SAC controller and control the sphero'''

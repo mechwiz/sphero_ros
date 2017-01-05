@@ -109,7 +109,7 @@ class SpheroNode(object):
         self.robot.start()
 
     def spin(self):
-        r = rospy.Rate(10.0)
+        r = rospy.Rate(20.0)
         while not rospy.is_shutdown():
             now = rospy.Time.now()
             if  (now - self.last_cmd_vel_time) > self.cmd_vel_timeout:

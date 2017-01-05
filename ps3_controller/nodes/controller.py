@@ -98,6 +98,9 @@ class PSController(object):
                 self.__calibration_control = False
                 self.__manual_control = True
                 rospy.sleep(0.5)
+            if self.__button['triangle']:
+                self.__reset_loc_pub.publish(Float32(1))
+                rospy.sleep(0.5)
             r.sleep()
 
     def __calibration(self):

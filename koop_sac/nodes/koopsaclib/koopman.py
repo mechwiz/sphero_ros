@@ -6,7 +6,10 @@ class Koopman(object):
         # k = sio.loadmat('/home/anon/ros_ws/src/sphero_ros/koop_sac/nodes/Data_Export.mat')
         # k = sio.loadmat('/home/anon/ros_ws/src/sphero_ros/koop_sac/nodes/K3rdupdate.mat')
         # k = sio.loadmat('/home/anon/ros_ws/src/sphero_ros/koop_sac/nodes/K3rd.mat')
-        k = sio.loadmat('/home/anon/ros_ws/src/sphero_ros/koop_sac/nodes/Kaffine.mat')
+        # k = sio.loadmat('/home/anon/ros_ws/src/sphero_ros/koop_sac/nodes/Kaffine.mat')
+
+        k = sio.loadmat('/home/anon/ros_ws/src/sphero_ros/koop_sac/nodes/Kaffine2.mat')
+        # k = sio.loadmat('/home/anon/ros_ws/src/sphero_ros/koop_sac/nodes/Klinear.mat')
         # K = np.load('/home/anon/ros_ws/src/sphero_ros/koop_sac/nodes/kmat.npy')
         self.K = k['K']
         # self.K = K

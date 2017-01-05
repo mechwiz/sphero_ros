@@ -21,14 +21,14 @@ class DoubleIntegrator(object):
             np.array([
                         [0.,0.,dt,0.],
                         [0.,0.,0.,dt],
-                        [0.,0.,-0.25,0.],
-                        [0.,0.,0.,-0.25],
+                        [0.,0.,0.,0.],
+                        [0.,0.,0.,0.],
                         ])
         self.B = np.array([
                         [0.,0.],
                         [0.,0.],
-                        [0.4,0.],
-                        [0.,0.4]
+                        [0.8,0.],
+                        [0.,0.8]
         ])
 
         self.kop = Koopman()
@@ -52,8 +52,8 @@ class DoubleIntegrator(object):
         L = self.kop.K.dot(self.kop.dphidx(x,u))
         # np.set_printoptions(precision=3)
         # np.set_printoptions(suppress=True)
-        # return self.A + L
-        return self.A + self.kop.K[0:4,0:4]
+        return self.A + L
+        # return self.A + self.kop.K[0:4,0:4]
         # return L[0:6,0:6]
 
     def fdu(self, x, u):
@@ -66,8 +66,8 @@ class DoubleIntegrator(object):
         # print L.shape
         # print L[0:6,0:6]
         #print L.shape
-        # return self.B + L
-        return self.B + self.kop.K[0:4,4:6]
+        return self.B + L
+        # return self.B + self.kop.K[0:4,4:6]
 
 
     def simulate(self, x0, u0, t0, tf, dt=0.1, args=(None,)):
