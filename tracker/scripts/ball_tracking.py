@@ -94,13 +94,18 @@ class BallTracker:
             t1 = [np.random.uniform(0.25,0.75),np.random.uniform(0.25,0.75)]
             t2 = [np.random.uniform(0.25,0.75),np.random.uniform(0.25,0.75)]
             t3 = [np.random.uniform(0.25,0.75),np.random.uniform(0.25,0.75)]
-            vel = 0.01
+            vel = 0.1
             self.__t0 = rospy.get_time()
-            self.__stat_1 = lambda t: np.array([0.15*np.cos(vel*t)+0.5, 0.15*np.sin(vel*t)+0.5])
-            self.__stat_2 = lambda t: self.__stat_1(t+np.pi/vel)
-            self.__stat_3 = lambda t: self.__stat_1(t+(np.pi/2.0)/vel)
-            # self.__stat_1 = lambda t: np.array(t1)
-            # self.__stat_2 = lambda t: np.array(t2)
+            # self.__stat_1 = lambda t: np.array([0.15*np.cos(vel*t)+0.5, 0.15*np.sin(vel*t)+0.5])
+            # self.__stat_2 = lambda t: self.__stat_1(t+np.pi/vel)
+            # self.__stat_3 = lambda t: self.__stat_1(t+(np.pi/2.0)/vel)
+
+            ###### pseudo random target trajectories
+            rad = 0.12
+            self.__stat_1 = lambda t: np.array([rad*np.cos(vel*t)+0.4, rad*np.sin(vel*t)+0.45])
+            self.__stat_2 = lambda t: np.array([rad*np.cos(vel*t + np.pi/2.0)+0.6, rad*np.sin(vel*t + np.pi/2.0)+0.45])
+            self.__stat_3 = lambda t: np.array([rad*np.cos(vel*t + 3*np.pi/2.0)+0.5, rad*np.sin(vel*t + 3*np.pi/2.0)+0.55])
+
 
 
     def _get_vk1(self, data):
@@ -237,7 +242,7 @@ class BallTracker:
         cv2.putText(self.frame, 'ros time: ' + str(rospy.get_time()) , (int(320*0.01), int(320*0.05)), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0,255,255))
 
     def spin(self):
-        ''' Actual code that infinitely loops'''
+        '''Actual code that infinitely loops'''
         # r = rospy.Rate(20.0)
         r = rospy.Rate(20)
         # actual ball tracking loop
@@ -252,6 +257,9 @@ class BallTracker:
             else:
                 self.track_filtered_objects() # if there was an explicit list passed
             self.drawTime()
+            cv2.circle(self.frame, (int(0.6*320), int(0.45*320)), int(0.12*320), (255, 0, 255), 2)
+            cv2.circle(self.frame, (int(0.5*320), int(0.55*320)), int(0.12*320), (0, 0, 255), 2)
+            cv2.circle(self.frame, (int(0.4*320), int(0.45*320)), int(0.12*320), (0, 255, 0), 2)
             cv2.imshow('Image', self.frame)
             key = cv2.waitKey(1) & 0xFF
             if key == ord("q"):

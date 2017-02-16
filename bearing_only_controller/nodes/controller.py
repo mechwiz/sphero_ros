@@ -69,8 +69,11 @@ class SpheroController:
 
         self.__t0 = rospy.get_time() # return init time in seconds
         self._init_sac() # init sac
+        print "Initializing SAC"
         self._init_pubsub() # init the publishers and subscribers
+        print "Initializing pub sub"
         self._init_sac_timers() # initialize the timers
+        print "Init SAC timer"
 
     def _init_sac(self):
 
@@ -135,7 +138,9 @@ class SpheroController:
         # setup publishers + subribers + timers:
 
         # subscribers
+        # use this subsriber when working with the webcam and not the kinect
         self.odom_sub = rospy.Subscriber('odomRobot', Pose, self._get_odometry ,queue_size=2)
+        # self.odom_sub = rospy.Subscriber('k_odom', Pose, self._get_odometry ,queue_size=2)
         self.target_sub1 = rospy.Subscriber('odomTarget1', Pose, self._get_target1, queue_size=1)
         self.target_sub2 = rospy.Subscriber('odomTarget2', Pose, self._get_target2, queue_size=1)
         self.target_sub3 = rospy.Subscriber('odomTarget3', Pose, self._get_target3, queue_size=1)
@@ -279,6 +284,7 @@ class SpheroController:
     def _get_odometry(self, data):
         ''' update the robot's position in the world '''
         self.x0 = np.array([data.position.x,1-data.position.y])
+        print "here"
         if len(self.xpast) < self.n_past:
             self.xpast.append(self.x0)
             self.tpast.append(rospy.get_time() - self.__t0) # add the new time
