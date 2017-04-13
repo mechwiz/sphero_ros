@@ -18,6 +18,7 @@ from std_msgs.msg import ColorRGBA, Float32, Bool
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from sphero_node.cfg import ReconfigConfig
 
+import numpy as np
 
 class SpheroNode(object):
     battery_state =  {1:"Battery Charging",
@@ -114,7 +115,7 @@ class SpheroNode(object):
             now = rospy.Time.now()
             if  (now - self.last_cmd_vel_time) > self.cmd_vel_timeout:
                 if self.cmd_heading != 0 or self.cmd_speed != 0:
-                    self.cmd_heading = 0
+                    # self.cmd_heading = 0
                     self.cmd_speed = 0
                     self.robot.roll(int(self.cmd_speed), int(self.cmd_heading), 1, False)
             if (now - self.last_diagnostics_time) > self.diag_update_rate:
@@ -208,13 +209,16 @@ class SpheroNode(object):
     def cmd_vel(self, msg):
         if self.is_connected:
             self.last_cmd_vel_time = rospy.Time.now()
-            self.cmd_heading = self.normalize_angle_positive(math.atan2(msg.linear.x,msg.linear.y))*180/math.pi
+            if np.linalg.norm([msg.linear.x, msg.linear.y]) > 1:
+                self.cmd_heading = self.normalize_angle_positive(math.atan2(msg.linear.x,msg.linear.y))*180/math.pi
             self.cmd_speed = math.sqrt(math.pow(msg.linear.x,2)+math.pow(msg.linear.y,2))
             self.robot.roll(int(self.cmd_speed), int(self.cmd_heading), 1, False)
 
     def dir_heading(self, msg):
         if self.is_connected:
             self.last_cmd_vel_time = rospy.Time.now()
+            # if np.linalg.norm([msg.linear.x, msg.linear.y]) > 1:
+            #     self.cmd_heading = self.normalize_angle_positive(math.atan2(msg.linear.x,msg.linear.y))*180/math.pi
             self.cmd_heading = self.normalize_angle_positive(math.atan2(msg.linear.x,msg.linear.y))*180/math.pi
             self.cmd_speed = 0
             self.robot.roll(int(self.cmd_speed), int(self.cmd_heading), 1, False)
