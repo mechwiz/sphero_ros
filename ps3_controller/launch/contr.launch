@@ -1,3 +1,4 @@
 <launch>
+    <node name="joystick" pkg="joy" type="joy_node" />
     <node pkg="sphero_ps3" type="controller.py" name="sphero_ps3" output="screen"/>
 </launch>

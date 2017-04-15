@@ -496,6 +496,7 @@ class Sphero(threading.Thread):
     :param enable: 00h for off and 01h for on (on by default).
     :param response: request response back from Sphero.
     """
+    print enable
     self.send(self.pack_cmd(REQ['CMD_SET_STABILIZ'],[enable]), response)
 
   def set_rotation_rate(self, rate, response):
@@ -721,7 +722,7 @@ class Sphero(threading.Thread):
     brake, 0x04 - ignored.
     :param power: 0-255 scalar value (units?).
     """
-    self.send(self.pack_cmd(REQ['CMD_RAW_MOTORS'], [l_mode, l_power, r_mode, r_power]), response)
+    self.send(self.pack_cmd(REQ['CMD_SET_RAW_MOTORS'], [l_mode, l_power, r_mode, r_power]), response)
 
   def send(self, data, response):
     """

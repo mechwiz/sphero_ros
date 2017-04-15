@@ -14,7 +14,7 @@ from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Point, Pose, Quaternion, Twist, TwistWithCovariance, Vector3
 from sphero_node.msg import SpheroCollision
-from std_msgs.msg import ColorRGBA, Float32, Bool
+from std_msgs.msg import ColorRGBA, Float32, Bool, Float32MultiArray
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from sphero_node.cfg import ReconfigConfig
 
@@ -68,6 +68,7 @@ class SpheroNode(object):
         self.collision_pub = rospy.Publisher('collision', SpheroCollision, queue_size = 5)
         self.diag_pub = rospy.Publisher('/diagnostics', DiagnosticArray, queue_size = 5)
         self.cmd_vel_sub = rospy.Subscriber('cmd_vel', Twist, self.cmd_vel, queue_size = 1)
+        self.raw_motor_cmd_sub = rospy.Subscriber('raw_motor_cmd', Float32MultiArray, self.raw_motor_cmd, queue_size=1)
         self.color_sub = rospy.Subscriber('set_color', ColorRGBA, self.set_color, queue_size = 1)
         self.back_led_sub = rospy.Subscriber('set_back_led', Float32, self.set_back_led, queue_size = 1)
         self.stabilization_sub = rospy.Subscriber('disable_stabilization', Bool, self.set_stabilization, queue_size = 1)
@@ -205,6 +206,23 @@ class SpheroNode(object):
         if self.is_connected:
             if int(msg.data) > 0:
                 self.robot.cfg_loc(False)
+
+    def raw_motor_cmd(self, msg):
+        if self.is_connected:
+            self.last_cmd_vel_time = rospy.Time.now()
+            if msg.data[0] > 0:
+                l_mode = 0x01
+            elif msg.data[0] < 0:
+                l_mode = 0x02
+            else:
+                l_mode = 0x00
+            if msg.data[1] > 0:
+                r_mode = 0x01
+            elif msg.data[1] < 0:
+                r_mode = 0x02
+            else:
+                r_mode = 0x00
+            self.robot.set_raw_motor_values(l_mode, int(abs(msg.data[0])*255), r_mode, int(abs(msg.data[1])*255), False)
 
     def cmd_vel(self, msg):
         if self.is_connected:
