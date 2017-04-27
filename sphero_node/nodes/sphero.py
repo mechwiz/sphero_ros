@@ -14,7 +14,7 @@ from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Point, Pose, Quaternion, Twist, TwistWithCovariance, Vector3
 from sphero_node.msg import SpheroCollision
-from std_msgs.msg import ColorRGBA, Float32, Bool, Float32MultiArray
+from std_msgs.msg import ColorRGBA, Float32, Bool, Float32MultiArray, Int32MultiArray
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from sphero_node.cfg import ReconfigConfig
 
@@ -76,6 +76,7 @@ class SpheroNode(object):
         self.angular_velocity_sub = rospy.Subscriber('set_angular_velocity', Float32, self.set_angular_velocity, queue_size = 1)
         self.dir_heading_sub = rospy.Subscriber('dir_heading', Twist, self.dir_heading, queue_size=1)
         self.reset_loc_sub = rospy.Subscriber('reset_loc', Float32, self.reset_loc, queue_size=1)
+        self.config_collision_detect_sub = rospy.Subscriber('config_collision_detect', Int32MultiArray, self.config_collision_detect, queue_size=1)
         self.reconfigure_srv = dynamic_reconfigure.server.Server(ReconfigConfig, self.reconfigure)
         self.transform_broadcaster = tf.TransformBroadcaster()
 
@@ -201,6 +202,12 @@ class SpheroNode(object):
             self.transform_broadcaster.sendTransform((0.0, 0.0, 0.038 ),
                 (data["QUATERNION_Q0"], data["QUATERNION_Q1"], data["QUATERNION_Q2"], data["QUATERNION_Q3"]),
                 odom.header.stamp, "base_link", "base_footprint")
+
+    def config_collision_detect(self, msg):
+        if len(msg.data) == 5:
+            print "configuring collision with :", msg.data
+            self.robot.config_collision_detect(0x01, msg.data[0], msg.data[1], msg.data[2], msg.data[3], msg.data[4], False)
+
 
     def reset_loc(self, msg):
         if self.is_connected:

@@ -496,7 +496,6 @@ class Sphero(threading.Thread):
     :param enable: 00h for off and 01h for on (on by default).
     :param response: request response back from Sphero.
     """
-    print enable
     self.send(self.pack_cmd(REQ['CMD_SET_STABILIZ'],[enable]), response)
 
   def set_rotation_rate(self, rate, response):
@@ -561,7 +560,6 @@ class Sphero(threading.Thread):
     self.create_mask_list(sample_mask1, sample_mask2)
     self.stream_mask1 = sample_mask1
     self.stream_mask2 = sample_mask2
-    #print data
     self.send(data, response)
 
   def set_filtered_data_strm(self, sample_div, sample_frames, pcnt, response):

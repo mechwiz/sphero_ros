@@ -27,8 +27,8 @@ class PSController(object):
         rospy.init_node('Sphero_PS3_Controller') # init node at class init
 
         # should define some runtime flags here
-        self.__manual_control = False
-        self.__raw_motor_control = True
+        self.__manual_control = True
+        self.__raw_motor_control = False
         self.__calibration_control = False
 
         self.__joy = {'axes' : [0,0,0,0]}
@@ -87,7 +87,6 @@ class PSController(object):
         seton.data = False
         self.__stabilization_pub.publish(seton)
         while not rospy.is_shutdown():
-
             if self.__manual_control: # check to see if manual control is on
                 self.__control() # send the control to the sphero
             if self.__raw_motor_control:
