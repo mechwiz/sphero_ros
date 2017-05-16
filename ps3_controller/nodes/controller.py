@@ -14,7 +14,7 @@ from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose, Twist, Vector3
 from sphero_node.msg import SpheroCollision
-from std_msgs.msg import ColorRGBA, Float32, Bool
+from std_msgs.msg import ColorRGBA, Float32, Bool, Float32MultiArray
 
 # random system import
 import sys
@@ -28,6 +28,7 @@ class PSController(object):
 
         # should define some runtime flags here
         self.__manual_control = True
+        self.__raw_motor_control = False
         self.__calibration_control = False
 
         self.__joy = {'axes' : [0,0,0,0]}
@@ -58,6 +59,8 @@ class PSController(object):
         self.__heading_pub = rospy.Publisher('set_heading', Float32, queue_size=1)
         self.__dir_heading_pub = rospy.Publisher('dir_heading', Twist, queue_size=1)
         self.__reset_loc_pub = rospy.Publisher('reset_loc', Float32, queue_size=1)
+        self.__raw_motor_cmd_pub = rospy.Publisher('raw_motor_cmd', Float32MultiArray, queue_size=1)
+        self.__stabilization_pub = rospy.Publisher('disable_stabilization', Bool, queue_size = 1)
 
         #################################
         # mode indicators for the sphero
@@ -80,10 +83,14 @@ class PSController(object):
 
     def spin(self, rate=60):
         r = rospy.Rate(rate)
+        seton = Bool()
+        seton.data = False
+        self.__stabilization_pub.publish(seton)
         while not rospy.is_shutdown():
-
             if self.__manual_control: # check to see if manual control is on
                 self.__control() # send the control to the sphero
+            if self.__raw_motor_control:
+                self.__raw_motor_cmd()
             if self.__calibration_control:
                 self.__calibration() # send calibration controls to the sphero
             if self.__button['select'] and self.__button['start'] and self.__calibration_control is False:
@@ -99,7 +106,17 @@ class PSController(object):
                 self.__manual_control = True
                 rospy.sleep(0.5)
             if self.__button['triangle']:
-                self.__reset_loc_pub.publish(Float32(1))
+                # self.__reset_loc_pub.publish(Float32(1))
+                self.__color_pub.publish(ColorRGBA(0,1,0,0))
+                rospy.sleep(0.5)
+            if self.__button['square']:
+                self.__color_pub.publish(ColorRGBA(1,0,0,0))
+                rospy.sleep(0.5)
+            if self.__button['cross']:
+                self.__color_pub.publish(ColorRGBA(0,0,1,0))
+                rospy.sleep(0.5)
+            if self.__button['circle']:
+                self.__color_pub.publish(ColorRGBA(1,0,1,0))
                 rospy.sleep(0.5)
             r.sleep()
 
@@ -133,6 +150,12 @@ class PSController(object):
         ''' Method that fully controls the sphero '''
         u = self.__joy['axes'][0:2]
         self.__cmd_vel_pub.publish(Twist(Vector3(int(u[0]*255),int(u[1]*255),0.0), Vector3(0.0,0.0,0.0)))
+    def __raw_motor_cmd(self):
+        """ Control directly the motor PWM """
+        u = [self.__joy['axes'][1], self.__joy['axes'][3]]
+        msg = Float32MultiArray()
+        msg.data = u
+        self.__raw_motor_cmd_pub.publish(msg)
 
 if __name__ == '__main__':
     sac = PSController()

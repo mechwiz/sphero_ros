@@ -14,7 +14,7 @@ from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Point, Pose, Quaternion, Twist, TwistWithCovariance, Vector3
 from sphero_node.msg import SpheroCollision
-from std_msgs.msg import ColorRGBA, Float32, Bool
+from std_msgs.msg import ColorRGBA, Float32, Bool, Float32MultiArray, Int32MultiArray
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from sphero_node.cfg import ReconfigConfig
 
@@ -68,6 +68,7 @@ class SpheroNode(object):
         self.collision_pub = rospy.Publisher('collision', SpheroCollision, queue_size = 5)
         self.diag_pub = rospy.Publisher('/diagnostics', DiagnosticArray, queue_size = 5)
         self.cmd_vel_sub = rospy.Subscriber('cmd_vel', Twist, self.cmd_vel, queue_size = 1)
+        self.raw_motor_cmd_sub = rospy.Subscriber('raw_motor_cmd', Float32MultiArray, self.raw_motor_cmd, queue_size=1)
         self.color_sub = rospy.Subscriber('set_color', ColorRGBA, self.set_color, queue_size = 1)
         self.back_led_sub = rospy.Subscriber('set_back_led', Float32, self.set_back_led, queue_size = 1)
         self.stabilization_sub = rospy.Subscriber('disable_stabilization', Bool, self.set_stabilization, queue_size = 1)
@@ -75,6 +76,7 @@ class SpheroNode(object):
         self.angular_velocity_sub = rospy.Subscriber('set_angular_velocity', Float32, self.set_angular_velocity, queue_size = 1)
         self.dir_heading_sub = rospy.Subscriber('dir_heading', Twist, self.dir_heading, queue_size=1)
         self.reset_loc_sub = rospy.Subscriber('reset_loc', Float32, self.reset_loc, queue_size=1)
+        self.config_collision_detect_sub = rospy.Subscriber('config_collision_detect', Int32MultiArray, self.config_collision_detect, queue_size=1)
         self.reconfigure_srv = dynamic_reconfigure.server.Server(ReconfigConfig, self.reconfigure)
         self.transform_broadcaster = tf.TransformBroadcaster()
 
@@ -201,10 +203,33 @@ class SpheroNode(object):
                 (data["QUATERNION_Q0"], data["QUATERNION_Q1"], data["QUATERNION_Q2"], data["QUATERNION_Q3"]),
                 odom.header.stamp, "base_link", "base_footprint")
 
+    def config_collision_detect(self, msg):
+        if len(msg.data) == 5:
+            print "configuring collision with :", msg.data
+            self.robot.config_collision_detect(0x01, msg.data[0], msg.data[1], msg.data[2], msg.data[3], msg.data[4], False)
+
+
     def reset_loc(self, msg):
         if self.is_connected:
             if int(msg.data) > 0:
                 self.robot.cfg_loc(False)
+
+    def raw_motor_cmd(self, msg):
+        if self.is_connected:
+            self.last_cmd_vel_time = rospy.Time.now()
+            if msg.data[0] > 0:
+                l_mode = 0x01
+            elif msg.data[0] < 0:
+                l_mode = 0x02
+            else:
+                l_mode = 0x00
+            if msg.data[1] > 0:
+                r_mode = 0x01
+            elif msg.data[1] < 0:
+                r_mode = 0x02
+            else:
+                r_mode = 0x00
+            self.robot.set_raw_motor_values(l_mode, int(abs(msg.data[0])*255), r_mode, int(abs(msg.data[1])*255), False)
 
     def cmd_vel(self, msg):
         if self.is_connected:

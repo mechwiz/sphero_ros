@@ -560,7 +560,6 @@ class Sphero(threading.Thread):
     self.create_mask_list(sample_mask1, sample_mask2)
     self.stream_mask1 = sample_mask1
     self.stream_mask2 = sample_mask2
-    #print data
     self.send(data, response)
 
   def set_filtered_data_strm(self, sample_div, sample_frames, pcnt, response):
@@ -721,7 +720,7 @@ class Sphero(threading.Thread):
     brake, 0x04 - ignored.
     :param power: 0-255 scalar value (units?).
     """
-    self.send(self.pack_cmd(REQ['CMD_RAW_MOTORS'], [l_mode, l_power, r_mode, r_power]), response)
+    self.send(self.pack_cmd(REQ['CMD_SET_RAW_MOTORS'], [l_mode, l_power, r_mode, r_power]), response)
 
   def send(self, data, response):
     """
