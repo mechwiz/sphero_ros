@@ -54,6 +54,7 @@ class KinectTracker(object):
         self.upper = (255, 255, 255)
         self.lower = (125, 149, 253)
         self.__offset = np.array([1.0,0.75]) - np.array([0.5,0.5])
+        self.__offset *= 0
         self.__threshold = [800,901]
         rospy.init_node('kinect_tracker')
         self.__init_pubsub()
