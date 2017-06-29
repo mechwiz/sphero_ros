@@ -1,3 +1,0 @@
-<launch>
-    <node pkg="tracker" type="track.py" name="rob_tracker" output="screen"/>
-</launch>
