@@ -50,7 +50,19 @@ class SpheroNode(object):
         self.is_connected = False
         self._init_pubsub()
         self._init_params()
-        self.robot = sphero_driver.Sphero()
+        #self.robot = sphero_driver.Sphero()
+        self.robot_name = "sphero"
+        self.robot_bt_addr = None
+        if rospy.has_param('/predator/sphero/bt_addr'):
+            self.robot_bt_addr = rospy.get_param('/predator/sphero/bt_addr')
+        if rospy.has_param('/prey/sphero/bt_addr'):
+            self.robot_bt_addr = rospy.get_param('/prey/sphero/bt_addr')
+
+        print "connect bt_addr " + str(self.robot_bt_addr)
+        if self.robot_bt_addr != None:
+            self.robot = sphero_driver.Sphero(self.robot_name, self.robot_bt_addr)
+        else:
+            self.robot = sphero_driver.Sphero()
         self.imu = Imu()
         self.imu.orientation_covariance = [1e-6, 0, 0, 0, 1e-6, 0, 0, 0, 1e-6]
         self.imu.angular_velocity_covariance = [1e-6, 0, 0, 0, 1e-6, 0, 0, 0, 1e-6]
